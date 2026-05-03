@@ -1,0 +1,231 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-hint);
+}
+
+select option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+::selection {
+  background: var(--accent-muted);
+  color: var(--text-primary);
+}
+
+.glass-card {
+  background: rgba(var(--text-primary-rgb), 0.04);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-default);
+}
+
+.streetwear-grid {
+  background-image:
+    linear-gradient(rgba(var(--text-primary-rgb), 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--text-primary-rgb), 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.marquee-track {
+  animation: marquee 22s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(var(--text-primary-rgb), 0.12), transparent);
+  animation: shimmer-slide 1.5s infinite;
+}
+
+.app-page {
+  padding: 32px 40px;
+}
+
+.app-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.app-input {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.app-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18);
+}
+
+.app-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.app-input.is-error {
+  border-color: var(--error);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.08);
+}
+
+.app-input.is-success,
+.app-input.is-locked {
+  border-color: var(--success);
+  color: var(--success);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.app-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.app-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-hint);
+}
+
+.app-section-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+}
+
+.app-page-heading {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+@media (max-width: 767px) {
+  .app-page {
+    padding: 24px;
+  }
+
+  .size-btn {
+    min-height: 48px !important;
+    min-width: 56px !important;
+  }
+
+  .product-actions button {
+    width: 100% !important;
+  }
+
+  .thumbnail-strip {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding-bottom: 4px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-center {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-box {
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes shimmer-slide {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--text-primary-rgb), 0.05) 25%,
+    rgba(var(--text-primary-rgb), 0.09) 50%,
+    rgba(var(--text-primary-rgb), 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}

@@ -9,18 +9,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=unauthorized", req.url));
   }
 
-  if (pathname.startsWith("/admin")) {
-    if (!token || token.role !== "admin") {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-  }
-
-  if (pathname.startsWith("/seller")) {
-    if (!token || (token.role !== "seller" && token.role !== "admin")) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-  }
-
   const userProtected = ["/checkout", "/orders", "/wishlist"];
   if (userProtected.some((path) => pathname.startsWith(path)) && !token) {
     return NextResponse.redirect(new URL(`/login?callbackUrl=${pathname}`, req.url));
@@ -30,5 +18,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/seller/:path*", "/checkout/:path*", "/orders/:path*", "/wishlist/:path*"],
+  matcher: ["/checkout/:path*", "/orders/:path*", "/wishlist/:path*"],
 };

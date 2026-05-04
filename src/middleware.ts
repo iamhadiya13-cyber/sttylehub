@@ -10,18 +10,18 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith("/admin")) {
-    if (!token) {
-      return NextResponse.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(pathname)}`, req.url));
+    if (!token || token.role !== "admin") {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
   if (pathname.startsWith("/seller")) {
-    if (!token) {
-      return NextResponse.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(pathname)}`, req.url));
+    if (!token || (token.role !== "seller" && token.role !== "admin")) {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
-  const userProtected = ["/checkout", "/orders", "/profile", "/wishlist"];
+  const userProtected = ["/checkout", "/orders", "/wishlist"];
   if (userProtected.some((path) => pathname.startsWith(path)) && !token) {
     return NextResponse.redirect(new URL(`/login?callbackUrl=${pathname}`, req.url));
   }
@@ -30,5 +30,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/seller/:path*", "/checkout/:path*", "/orders/:path*", "/profile/:path*", "/wishlist/:path*"],
+  matcher: ["/admin/:path*", "/seller/:path*", "/checkout/:path*", "/orders/:path*", "/wishlist/:path*"],
 };

@@ -5,8 +5,6 @@ import { User } from "@/lib/models/User";
 import { getOtpCooldownRemaining } from "@/lib/otp";
 import { userProfileSchema } from "@/lib/validators";
 
-const allowedColorways = new Set(["void", "infrared", "arctic"]);
-
 export const GET = withAuth(async (_request, { user }) => {
   try {
     await connectDB();
@@ -53,38 +51,6 @@ export const PUT = withAuth(async (request, { user }) => {
     return apiSuccess(profile, "Profile updated successfully");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update profile";
-    return Response.json({ success: false, message }, { status: 400 });
-  }
-});
-
-export const PATCH = withAuth(async (request, { user }) => {
-  try {
-    const payload = (await request.json()) as { colorway?: unknown };
-    const colorway = typeof payload.colorway === "string" ? payload.colorway : "";
-
-    if (!allowedColorways.has(colorway)) {
-      return Response.json(
-        { success: false, message: "Invalid colorway selection" },
-        { status: 400 },
-      );
-    }
-
-    await connectDB();
-
-    const profile = await User.findByIdAndUpdate(
-      user.id,
-      { colorway },
-      {
-        new: true,
-        runValidators: true,
-      },
-    ).select(
-      "-password -resetPasswordOTP -resetPasswordExpiry -emailVerifyToken -emailVerifyExpiry -emailOtp -emailOtpExpiry -emailOtpSentAt",
-    );
-
-    return apiSuccess(profile, "Colorway updated successfully");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update colorway";
     return Response.json({ success: false, message }, { status: 400 });
   }
 });

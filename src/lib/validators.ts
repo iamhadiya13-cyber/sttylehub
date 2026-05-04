@@ -112,6 +112,7 @@ export const cartSyncSchema = z.object({
 });
 
 export const orderCreateSchema = z.object({
+  idempotencyKey: z.string().min(1),
   items: z.array(
     z.object({
       productId: z.string().min(1),
@@ -132,6 +133,28 @@ export const orderCreateSchema = z.object({
 export const orderValidationSchema = orderCreateSchema.extend({
   shippingAddressId: z.string().min(1).optional(),
 });
+
+export const cancelOrderSchema = z.object({
+  reason: z.string().min(1).max(500),
+  customReason: z.string().max(500).optional(),
+});
+
+export const reviewDeleteSchema = z.object({
+  reviewId: z.string().min(1),
+});
+
+export const adminDeleteUserSchema = z.object({
+  userId: z.string().min(1),
+});
+
+export const notificationUpdateSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    markAll: z.boolean().optional(),
+  })
+  .refine((value) => value.markAll === true || Boolean(value.id), {
+    message: "Provide an id or markAll=true",
+  });
 
 export const reviewCreateSchema = z.object({
   productId: z.string().min(1),

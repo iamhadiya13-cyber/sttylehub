@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 const RECENT_SEARCHES_STORAGE_KEY = "stylehub:recent-searches";
 const RECENT_SEARCHES_LIMIT = 10;
@@ -53,11 +53,7 @@ function writeRecentSearches(entries: RecentSearchEntry[]) {
 }
 
 export function useRecentSearches() {
-  const [items, setItems] = useState<RecentSearchEntry[]>([]);
-
-  useEffect(() => {
-    setItems(readRecentSearches());
-  }, []);
+  const [items, setItems] = useState<RecentSearchEntry[]>(() => readRecentSearches());
 
   const addSearch = useCallback((query: string) => {
     const trimmed = query.trim();

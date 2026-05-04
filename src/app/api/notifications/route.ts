@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { connectDB } from "@/lib/db";
 import Notification from "@/lib/models/Notification";
+import { notificationUpdateSchema } from "@/lib/validators";
 
 function resolveNotificationQuery(user: { id: string; role: string }, scope: string | null) {
   if (scope === "admin") {
@@ -59,10 +60,7 @@ export const PUT = withAuth(async (request, { user }) => {
     const url = new URL(request.url);
     const scope = url.searchParams.get("scope");
     const query = resolveNotificationQuery(user, scope);
-    const body = (await request.json().catch(() => ({}))) as {
-      id?: string;
-      markAll?: boolean;
-    };
+    const body = notificationUpdateSchema.parse(await request.json().catch(() => ({})));
 
     if (body.markAll) {
       await Notification.updateMany({ ...query, isRead: false }, { $set: { isRead: true } });

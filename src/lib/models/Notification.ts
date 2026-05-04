@@ -16,6 +16,8 @@ const NotificationSchema = new Schema(
   { timestamps: true },
 );
 
+NotificationSchema.index({ createdAt: -1 });
+
 export type NotificationDocument = InferSchemaType<typeof NotificationSchema>;
 export const Notification = models.Notification || model("Notification", NotificationSchema);
 export default Notification;

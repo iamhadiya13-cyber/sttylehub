@@ -47,7 +47,19 @@ export const POST = withVerifiedUser(async (request, { user }) => {
     await connectDB();
     const payload = orderCreateSchema.parse(await request.json());
     const order = await createOrderForUser(user.id, user.email, payload);
-    return apiSuccess(order, "Order created successfully");
+    const orderData =
+      typeof order.toObject === "function" ? order.toObject() : order;
+    const alreadyExisted =
+      typeof orderData === "object" && orderData !== null && "alreadyExisted" in orderData
+        ? Boolean((orderData as { alreadyExisted?: boolean }).alreadyExisted)
+        : false;
+    return apiSuccess(
+      {
+        ...orderData,
+        alreadyExisted,
+      },
+      alreadyExisted ? "Order already exists" : "Order created successfully",
+    );
   } catch (error) {
     return apiErrorFromUnknown(error, "Failed to create order");
   }

@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { z } from "zod";
+import { NextResponse } from "next/server";
 import { apiSuccess } from "@/lib/api";
 import { connectDB } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
@@ -34,6 +35,13 @@ export async function POST(request: Request) {
     const existingOrder = await Order.findById(payload.orderId);
     if (!existingOrder) {
       return Response.json({ success: false, message: "Order not found" }, { status: 404 });
+    }
+
+    if (payload.razorpay_order_id !== existingOrder.razorpayOrderId) {
+      return NextResponse.json(
+        { success: false, error: "Order ID mismatch" },
+        { status: 400 },
+      );
     }
 
     const alreadyPaid = existingOrder.paymentStatus === "paid";

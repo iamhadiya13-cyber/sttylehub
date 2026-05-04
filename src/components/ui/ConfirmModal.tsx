@@ -27,8 +27,8 @@ const confirmStyles: Record<ConfirmModalVariant, string> = {
   warning:
     "border border-amber-400/30 bg-amber-400/12 text-amber-50 hover:bg-amber-400/18",
   default:
-    "text-[var(--text-on-accent)] hover:opacity-95",
-  info: "text-[var(--text-on-accent)] hover:opacity-95",
+    "border border-[#7F77DD]/30 bg-[#7F77DD] text-white hover:bg-[#736AD3]",
+  info: "border border-[#7F77DD]/30 bg-[#7F77DD] text-white hover:bg-[#736AD3]",
 };
 
 export default function ConfirmModal({
@@ -84,28 +84,19 @@ export default function ConfirmModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="w-full max-w-[400px] rounded-[20px] p-5"
-            style={{
-              border: "1px solid var(--border-default)",
-              background: "var(--bg-elevated)",
-              boxShadow: "0 24px 60px rgba(var(--shadow-color-rgb), 0.35)",
-            }}
+            className="w-full max-w-[400px] rounded-[20px] border border-white/[0.08] bg-[#111111] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="space-y-2">
-              <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h2>
-              <p className="text-sm leading-6" style={{ color: "var(--text-secondary)" }}>{message}</p>
+              <h2 className="text-base font-semibold text-white">{title}</h2>
+              <p className="text-sm leading-6 text-[#A3A3A3]">{message}</p>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-transparent px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  border: "1px solid var(--border-default)",
-                  color: "var(--text-secondary)",
-                }}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 bg-transparent px-4 text-sm font-medium text-[#A3A3A3] transition hover:border-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {resolvedCancelText}
               </button>
@@ -115,14 +106,6 @@ export default function ConfirmModal({
                 loadingText={resolvedLoadingText}
                 onClick={onConfirm}
                 className={`inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${confirmStyles[variant]}`}
-                style={
-                  variant === "default" || variant === "info"
-                    ? {
-                        background: "var(--accent-primary)",
-                        border: "1px solid rgba(var(--accent-primary-rgb), 0.28)",
-                      }
-                    : undefined
-                }
               >
                 {resolvedConfirmText}
               </LoadingButton>

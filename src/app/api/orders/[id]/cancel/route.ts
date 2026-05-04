@@ -9,6 +9,7 @@ import { Seller } from "@/lib/models/Seller";
 import { User } from "@/lib/models/User";
 import { findVariant, getTotalStock } from "@/lib/product-variants";
 import { createNotification } from "@/lib/services/notification.service";
+import { cancelOrderSchema } from "@/lib/validators";
 
 const CANCELLATION_REASONS = [
   "Ordered by mistake",
@@ -20,7 +21,7 @@ const CANCELLATION_REASONS = [
 
 async function cancelOrder(request: Request, { params, user }: { params: { id: string }; user: { id: string } }) {
   try {
-    const body = (await request.json()) as { reason?: string; customReason?: string };
+    const body = cancelOrderSchema.parse(await request.json());
     const reason = body.reason?.trim() || "";
     const customReason = body.customReason?.trim() || "";
 

@@ -1,4 +1,9 @@
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+} from "mongoose";
 import {
   APPAREL_SIZES,
   EXTENDED_SIZES,
@@ -76,7 +81,7 @@ const ProductSchema = new Schema(
     slug: { type: String, required: true, unique: true, index: true },
     description: { type: String, required: true, trim: true },
     shortDescription: { type: String, required: true, trim: true },
-    price: { type: Number, required: true, min: 0 },
+    price: { type: Number, required: true, min: 0, index: true },
     discountPrice: { type: Number, required: true, min: 0 },
     discountPercent: { type: Number, default: 0, min: 0 },
     images: [{ type: String, required: true }],
@@ -155,11 +160,15 @@ function prepareProduct(this: InferSchemaType<typeof ProductSchema>) {
   this.discountPercent = Math.max(0, Math.round(discount));
 }
 
-(ProductSchema as any).pre("validate", function productPreValidate(this: InferSchemaType<typeof ProductSchema>) {
+ProductSchema.pre<InferSchemaType<typeof ProductSchema>>("validate", function productPreValidate(
+  this: InferSchemaType<typeof ProductSchema>,
+) {
   prepareProduct.call(this);
 });
 
-(ProductSchema as any).pre("save", function productPreSave(this: InferSchemaType<typeof ProductSchema>) {
+ProductSchema.pre<InferSchemaType<typeof ProductSchema>>("save", function productPreSave(
+  this: InferSchemaType<typeof ProductSchema>,
+) {
   prepareProduct.call(this);
 });
 

@@ -89,14 +89,14 @@ export function verificationOtpEmail(name: string, otp: string) {
     .join("");
   return baseTemplate(
     "Verify your email",
-    `<p>Hi ${name},</p><p>Use the code below to verify your StyleHub account.</p><div style="display:flex;gap:8px;justify-content:center;margin:24px 0">${digits}</div><p>This code expires in 10 minutes.</p><p>If you didn't create an account, ignore this email.</p>`,
+    `<p>Hi ${name},</p><p>Use the code below to verify your StyleHub account.</p><div style="display:flex;gap:8px;justify-content:center;margin:24px 0">${digits}</div><p>This code expires in 5 minutes.</p><p>If you didn't create an account, ignore this email.</p>`,
   );
 }
 
 export function forgotPasswordEmail(name: string, otp: string) {
   return baseTemplate(
     "Your StyleHub OTP",
-    `<p>Hi ${name},</p><p>Use the OTP below to reset your password. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:0.3em;margin:24px 0;color:#C7D2FE">${otp}</div>`,
+    `<p>Hi ${name},</p><p>Use the OTP below to reset your password. It expires in 5 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:0.3em;margin:24px 0;color:#C7D2FE">${otp}</div>`,
   );
 }
 

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -31,6 +33,7 @@ export function FlashSaleSiteBanner() {
   const [data, setData] = useState<FlashSaleBannerData | null>(null);
   const [serverNowMs, setServerNowMs] = useState<number | null>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- initial sessionStorage read seeds dismissed state before the banner fetch runs
   useEffect(() => {
     const dismissedForSession =
       typeof window !== "undefined" && window.sessionStorage.getItem("stylehub-flash-sale-banner-dismissed") === "1";
@@ -63,6 +66,7 @@ export function FlashSaleSiteBanner() {
     };
   }, [dismissed]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- server time is intentionally seeded once before the ticking interval starts
   useEffect(() => {
     if (!data?.serverNow) {
       return;

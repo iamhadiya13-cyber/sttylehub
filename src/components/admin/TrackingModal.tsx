@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,6 +33,7 @@ export default function TrackingModal({
     };
   }, [isOpen]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- closing the modal should reset its local form state immediately
   useEffect(() => {
     if (!isOpen) {
       setTracking("");

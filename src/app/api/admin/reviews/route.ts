@@ -1,9 +1,10 @@
 import { apiSuccess } from "@/lib/api";
-import { withAdmin, withSeller } from "@/lib/api-helpers";
+import { withAdmin } from "@/lib/api-helpers";
 import { connectDB } from "@/lib/db";
 import { Review } from "@/lib/models/Review";
 import "@/lib/models/Product";
 import { rejectReviewById } from "@/lib/services/review.service";
+import { reviewDeleteSchema } from "@/lib/validators";
 
 export const GET = withAdmin(async (request) => {
   try {
@@ -44,13 +45,13 @@ export const GET = withAdmin(async (request) => {
   }
 });
 
-export const DELETE = withSeller(async (request, { user }) => {
+export const DELETE = withAdmin(async (request, { user }) => {
   try {
-    const { reviewId } = (await request.json()) as { reviewId: string };
+    const { reviewId } = reviewDeleteSchema.parse(await request.json());
     await connectDB();
     await rejectReviewById(reviewId, {
       id: user.id,
-      role: user.role === "admin" ? "admin" : "seller",
+      role: "admin",
       name: user.name,
       email: user.email,
     });

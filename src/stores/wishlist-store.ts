@@ -33,7 +33,10 @@ type WishlistState = {
   remove: (productId: string, variantId?: string) => void;
   has: (productId: string, variantId?: string) => boolean;
   flushPendingRemovals: () => void;
+  clearStore: () => void;
 };
+
+const WISHLIST_STORAGE_KEY = "stylehub-wishlist";
 
 const pendingRemovals = new Map<string, PendingRemoval>();
 
@@ -171,9 +174,20 @@ export const useWishlistStore = create<WishlistState>()(
         });
         pendingRemovals.clear();
       },
+      clearStore: () => {
+        Array.from(pendingRemovals.values()).forEach((pending) => {
+          window.clearTimeout(pending.timeoutId);
+          toast.dismiss(pending.toastId);
+        });
+        pendingRemovals.clear();
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(WISHLIST_STORAGE_KEY);
+        }
+        set({ items: [] });
+      },
     }),
     {
-      name: "stylehub-wishlist",
+      name: WISHLIST_STORAGE_KEY,
       partialize: (state) => ({ items: state.items }),
     },
   ),

@@ -7,14 +7,30 @@ import { Order, type OrderItemDocument } from "@/lib/models/Order";
 import { User } from "@/lib/models/User";
 import { getStripe } from "@/lib/stripe";
 import { updateStatsFromOrder } from "@/lib/route-utils";
+import { createNotification } from "@/lib/services/notification.service";
 import { confirmOrderPayment } from "@/lib/services/order.service";
 
 export async function POST(request: Request) {
-  try {
-    const signature = headers().get("stripe-signature")!;
-    const rawBody = await request.text();
-    const event = getStripe().webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!);
+  const signature = headers().get("stripe-signature");
+  if (!signature) {
+    return Response.json({ success: false, message: "Missing stripe signature" }, { status: 400 });
+  }
 
+  const rawBody = await request.text();
+  let event;
+
+  try {
+    event = getStripe().webhooks.constructEvent(
+      rawBody,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid Stripe webhook";
+    return Response.json({ success: false, message }, { status: 400 });
+  }
+
+  try {
     if (event.type === "payment_intent.succeeded") {
       await connectDB();
       const intent = event.data.object;
@@ -66,10 +82,43 @@ export async function POST(request: Request) {
           });
         }
       }
+    } else if (event.type === "payment_intent.payment_failed") {
+      await connectDB();
+      const intent = event.data.object;
+      const order = await Order.findOne({ stripePaymentIntentId: intent.id });
+
+      if (order) {
+        order.paymentStatus = "failed";
+        order.orderStatus = "pending";
+        order.statusHistory = [
+          ...(order.statusHistory || []),
+          {
+            status: "pending",
+            timestamp: new Date(),
+            note: "Stripe payment failed. Please retry payment.",
+            updatedBy: order.user,
+          },
+        ];
+        await order.save();
+
+        await createNotification({
+          type: "payment_failed",
+          title: "Payment failed",
+          message: `Payment for order #${order.orderNumber} failed. Please retry your payment.`,
+          link: `/orders/${order._id}`,
+          recipientUserId: order.user,
+          relatedId: order._id,
+          relatedModel: "Order",
+        });
+      }
+    } else {
+      console.info(`[stripe webhook] unhandled event: ${event.type}`);
     }
 
     return apiSuccess(null, "Webhook received");
-  } catch {
-    return apiSuccess(null, "Webhook received");
+  } catch (error) {
+    console.error("[stripe webhook] processing failed", error);
+    const message = error instanceof Error ? error.message : "Webhook processing failed";
+    return Response.json({ success: false, message }, { status: 500 });
   }
 }

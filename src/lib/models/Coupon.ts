@@ -7,7 +7,7 @@ const CouponSchema = new Schema(
     discountValue: { type: Number, required: true, min: 0 },
     minOrderAmount: { type: Number, default: 0, min: 0 },
     maxDiscountAmount: { type: Number, default: 0, min: 0 },
-    expiryDate: { type: Date },
+    expiryDate: { type: Date, index: true },
     usageLimit: { type: Number, default: 0, min: 0 },
     usedCount: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true, index: true },

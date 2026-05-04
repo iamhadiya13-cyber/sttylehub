@@ -216,63 +216,54 @@ export async function applyOrderInventoryDeductions(
   }>,
   session?: ClientSession,
 ) {
-  const grouped = new Map<
-    string,
-    Array<{
-      variantId?: string;
-      size?: string;
-      color?: string;
-      qty: number;
-    }>
-  >();
-
-  items.forEach((item) => {
+  for (const item of items) {
     const productId =
       typeof item.product === "string" ? item.product : item.product.toString();
-    const existing = grouped.get(productId) || [];
-    existing.push({
-      variantId: item.variantId,
-      size: item.size,
-      color: item.color,
-      qty: item.qty,
-    });
-    grouped.set(productId, existing);
-  });
 
-  const productIds = [...grouped.keys()];
-  const products = await Product.find({ _id: { $in: productIds } }).session(session || null);
-  const productMap = new Map(products.map((product) => [product.id, product]));
+    let variantId = item.variantId;
 
-  for (const [productId, lines] of grouped.entries()) {
-    const product = productMap.get(productId);
-    if (!product) {
-      throw new Error("Product not found");
-    }
+    if (!variantId) {
+      const productQuery = Product.findById(productId).select("title variants");
+      const product = session ? await productQuery.session(session) : await productQuery;
 
-    let totalSoldIncrement = 0;
+      if (!product) {
+        throw new Error("Product not found");
+      }
 
-    for (const line of lines) {
       const variant = resolveVariant(product.variants ?? [], {
-        variantId: line.variantId,
-        size: line.size,
-        colorName: line.color,
+        variantId: item.variantId,
+        size: item.size,
+        colorName: item.color,
       });
-      if (!variant) {
+
+      if (!variant || !isVariantActive(variant) || !variant._id) {
         throw new Error(`Variant unavailable for ${product.title}`);
-      }
-      if (!isVariantActive(variant)) {
-        throw new Error(`Variant unavailable for ${product.title}`);
-      }
-      if (variant.stock < line.qty) {
-        throw new Error(`Only ${variant.stock} units available for ${product.title}`);
       }
 
-      variant.stock -= line.qty;
-      totalSoldIncrement += line.qty;
+      variantId = variant._id.toString();
     }
 
-    product.totalSold += totalSoldIncrement;
-    product.totalStock = getTotalStock(product.variants ?? []);
-    await product.save(session ? { session } : undefined);
+    const updatedProduct = await Product.findOneAndUpdate(
+      {
+        _id: productId,
+        "variants._id": variantId,
+        "variants.stock": { $gte: item.qty },
+      },
+      {
+        $inc: {
+          "variants.$.stock": -item.qty,
+          totalStock: -item.qty,
+          totalSold: item.qty,
+        },
+      },
+      {
+        new: true,
+        ...(session ? { session } : {}),
+      },
+    ).select("title");
+
+    if (!updatedProduct) {
+      throw new Error(`Insufficient stock for variant ${variantId}`);
+    }
   }
 }

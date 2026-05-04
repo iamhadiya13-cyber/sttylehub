@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
 import { Coupon } from "../src/lib/models/Coupon";
@@ -268,6 +270,7 @@ async function main() {
           return [createdOrder];
         }) as never),
       );
+      restorers.push(stubMethod(Order, "findOne", (async () => null) as never));
 
       const order = await createOrderForUser(
         "user-1",
@@ -384,6 +387,11 @@ async function main() {
       restorers.push(
         stubMethod(Coupon, "findById", ((id: string) => ({
           select: async () => ({ _id: id, code: "SAVE200" }),
+        })) as never),
+      );
+      restorers.push(
+        stubMethod(Product, "findOneAndUpdate", (() => ({
+          select: async () => ({ title: "Coupon Hoodie" }),
         })) as never),
       );
 
@@ -617,6 +625,7 @@ async function main() {
           return [createdOrder];
         }) as never),
       );
+      restorers.push(stubMethod(Order, "findOne", (async () => null) as never));
 
       await assert.rejects(
         () =>
@@ -692,41 +701,62 @@ async function main() {
 
   await run("inventory deductions update two variants of the same product with one save", async () => {
     const restorers: Array<() => void> = [];
-    let saveCount = 0;
-
     const productDoc = {
       _id: "prod-1",
       id: "prod-1",
       title: "Dual Tone Hoodie",
       variants: [
         {
+          _id: "variant-white",
           size: "M",
           color: { name: "White", hex: "#ffffff" },
           stock: 5,
           sku: "SKU-WHITE-M",
           price: null,
+          isActive: true,
         },
         {
+          _id: "variant-black",
           size: "M",
           color: { name: "Black", hex: "#000000" },
           stock: 3,
           sku: "SKU-BLACK-M",
           price: null,
+          isActive: true,
         },
       ],
       totalSold: 10,
       totalStock: 8,
-      async save() {
-        saveCount += 1;
-        return this;
-      },
     };
 
     try {
       restorers.push(
-        stubMethod(Product, "find", (() => ({
-          session: async () => [productDoc],
+        stubMethod(Product, "findById", ((id: string) => ({
+          select: async () => (id === "prod-1" ? productDoc : null),
         })) as never),
+      );
+      restorers.push(
+        stubMethod(Product, "findOneAndUpdate", ((query: Record<string, unknown>, update: Record<string, unknown>) => {
+          const variantId = String(query["variants._id"] ?? "");
+          const minimumStock = Number((query["variants.stock"] as { $gte?: number })?.$gte ?? 0);
+          const variant = productDoc.variants.find((entry) => entry._id === variantId);
+
+          if (!variant || variant.stock < minimumStock) {
+            return null;
+          }
+
+          const stockDelta = Number((update.$inc as Record<string, number>)["variants.$.stock"] ?? 0);
+          const totalStockDelta = Number((update.$inc as Record<string, number>).totalStock ?? 0);
+          const totalSoldDelta = Number((update.$inc as Record<string, number>).totalSold ?? 0);
+
+          variant.stock += stockDelta;
+          productDoc.totalStock += totalStockDelta;
+          productDoc.totalSold += totalSoldDelta;
+
+          return {
+            select: async () => ({ title: productDoc.title }),
+          };
+        }) as never),
       );
 
       await applyOrderInventoryDeductions([
@@ -738,7 +768,6 @@ async function main() {
       assert.equal(productDoc.variants[1]?.stock, 2);
       assert.equal(productDoc.totalSold, 13);
       assert.equal(productDoc.totalStock, 5);
-      assert.equal(saveCount, 1);
     } finally {
       restoreAll(restorers);
     }
@@ -817,6 +846,7 @@ async function main() {
           return [createdOrder];
         }) as never),
       );
+      restorers.push(stubMethod(Order, "findOne", (async () => null) as never));
 
       const order = await createOrderForUser(
         "user-1",
@@ -966,6 +996,7 @@ async function main() {
           return { upsertedCount: 1 };
         }) as never),
       );
+      restorers.push(stubMethod(Order, "findOne", (async () => null) as never));
 
       await assert.rejects(
         () =>

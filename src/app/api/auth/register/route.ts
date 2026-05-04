@@ -48,15 +48,22 @@ export async function POST(request: Request) {
     });
     await issueOtp("verify-email", email, otp);
 
-    await sendEmail({
-      to: user.email,
-      subject: "Your StyleHub verification code",
-      html: verificationOtpEmail(user.name, otp),
-    });
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Your StyleHub verification code",
+        html: verificationOtpEmail(user.name, otp),
+      });
+    } catch (emailError) {
+      console.error("Registration OTP email failed:", emailError);
+    }
 
     logSecurityEvent("auth.register.created", { userId: user.id, email: user.email }, "info");
 
-    return apiSuccess({ email: user.email }, "Verification code sent to your email");
+    return apiSuccess(
+      { email: user.email },
+      "Account created. If you do not receive the code, use the resend OTP option.",
+    );
   } catch (error) {
     return apiErrorFromUnknown(error, "Registration failed", 400);
   }

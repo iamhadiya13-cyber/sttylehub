@@ -16,9 +16,11 @@ type RecentlyViewedState = {
   items: RecentlyViewedProduct[];
   addProduct: (product: RecentlyViewedProduct) => void;
   clearAll: () => void;
+  clearStore: () => void;
 };
 
 const MAX_RECENTLY_VIEWED = 8;
+const RECENTLY_VIEWED_STORAGE_KEY = "stylehub-recently-viewed";
 
 export const useRecentlyViewedStore = create<RecentlyViewedState>()(
   persist(
@@ -32,9 +34,15 @@ export const useRecentlyViewedStore = create<RecentlyViewedState>()(
           };
         }),
       clearAll: () => set({ items: [] }),
+      clearStore: () => {
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(RECENTLY_VIEWED_STORAGE_KEY);
+        }
+        set({ items: [] });
+      },
     }),
     {
-      name: "stylehub-recently-viewed",
+      name: RECENTLY_VIEWED_STORAGE_KEY,
     },
   ),
 );

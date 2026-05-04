@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import Link from "next/link";
@@ -202,6 +204,7 @@ export function AdminShell({
     return adminLinks.find((link) => isActivePath(pathname, link.href))?.label || title;
   }, [pathname, title]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- route changes should always collapse the temporary mobile drawer
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);

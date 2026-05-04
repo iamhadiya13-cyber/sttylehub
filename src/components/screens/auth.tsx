@@ -43,6 +43,7 @@ export function LoginPageScreen() {
   const searchParams = useSearchParams();
   const { status } = useSession();
   const callbackUrl = searchParams?.get("callbackUrl") || "/";
+  const reason = searchParams?.get("reason");
   const [showPassword, setShowPassword] = useState(false);
   const [shake, setShake] = useState(false);
   const googleEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_ENABLED);
@@ -57,6 +58,12 @@ export function LoginPageScreen() {
       router.push("/");
     }
   }, [router, status]);
+
+  useEffect(() => {
+    if (reason === "session_expired") {
+      toast("Your session expired. Please sign in again.", { id: "session-expired" });
+    }
+  }, [reason]);
 
   if (status === "loading") {
     return (
@@ -114,7 +121,7 @@ export function LoginPageScreen() {
           <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#1F1F1F]" />
         </div>
         {googleEnabled ? <Button type="button" variant="secondary" onClick={() => void signIn("google", { callbackUrl })} className="w-full">Continue with Google</Button> : null}
-      <p className="text-center text-sm text-[#888888]">Don't have an account? <Link href="/register" className="font-semibold text-white hover:text-[#A5B4FC]">Create one</Link></p>
+      <p className="text-center text-sm text-[#888888]">Don&apos;t have an account? <Link href="/register" className="font-semibold text-white hover:text-[#A5B4FC]">Create one</Link></p>
       </motion.form>
     </AuthSplitLayout>
   );
@@ -408,7 +415,7 @@ export function ForgotPasswordPageScreen() {
             <form onSubmit={submitEmail} className="space-y-5">
               <div>
                 <h1 className="text-3xl font-bold">Forgot Password</h1>
-                <p className="mt-2 text-sm text-[#888888]">We'll send a 6-digit OTP to your email.</p>
+                <p className="mt-2 text-sm text-[#888888]">We&apos;ll send a 6-digit OTP to your email.</p>
               </div>
               <Field label="Email address" error={emailForm.formState.errors.email?.message} icon={<Mail className="h-4 w-4" />}>
                 <TextInput type="email" placeholder="you@example.com" {...emailForm.register("email")} />

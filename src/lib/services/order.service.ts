@@ -22,6 +22,7 @@ import { ServiceError } from "@/lib/services/service-error";
 import { calculateShipping } from "@/lib/shipping";
 
 type OrderPayload = {
+  idempotencyKey?: string;
   items: Array<{
     productId: string;
     variantId?: string;
@@ -427,6 +428,8 @@ export async function createOrderForUser(
   payload: OrderPayload,
   options?: OrderServiceOptions,
 ) {
+  const idempotencyKey =
+    payload.idempotencyKey || `${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
   const validation = await validateOrderItemsForUser(userId, userEmail, payload);
 
   if (validation.invalidItems.length) {
@@ -481,6 +484,7 @@ export async function createOrderForUser(
   const orderNumber = `SH${Date.now().toString(36).toUpperCase()}`;
   const orderPayload = {
     orderNumber,
+    idempotencyKey,
     user: userId,
     items: items.map(({ category, ...item }) => item),
     shippingAddress,
@@ -505,7 +509,16 @@ export async function createOrderForUser(
     ],
   };
 
-  const order = await withOptionalTransaction(async (session) => {
+  const result = await withOptionalTransaction(async (session) => {
+    const existingQuery = Order.findOne({ idempotencyKey });
+    const existingOrder =
+      session && typeof existingQuery === "object" && existingQuery !== null && "session" in existingQuery
+        ? await existingQuery.session(session)
+        : await existingQuery;
+    if (existingOrder) {
+      return { order: existingOrder, alreadyExisted: true as const };
+    }
+
     if (couponId) {
       const couponDoc = await Coupon.findById(couponId).select("_id perUserLimit");
       if (!couponDoc) {
@@ -550,18 +563,18 @@ export async function createOrderForUser(
 
     }
 
-    return createdOrder;
+    return { order: createdOrder, alreadyExisted: false as const };
   });
 
   if (payload.paymentMethod === "cod") {
-    if (userDoc?.email) {
+    if (!result.alreadyExisted && userDoc?.email) {
       try {
         await sendEmail({
           to: userDoc.email,
-          subject: `Order confirmed - #${order.orderNumber}`,
+          subject: `Order confirmed - #${result.order.orderNumber}`,
           html: orderConfirmationEmail(
             {
-              orderNumber: order.orderNumber,
+              orderNumber: result.order.orderNumber,
               subtotal,
               discount,
               shippingCharge,
@@ -573,7 +586,7 @@ export async function createOrderForUser(
                 pincode: shippingAddress.pincode,
                 country: shippingAddress.country,
               },
-              items: order.items.map((item: OrderItemDocument) => ({
+              items: result.order.items.map((item: OrderItemDocument) => ({
                 image: item.image,
                 title: item.title,
                 size: item.size,
@@ -595,7 +608,7 @@ export async function createOrderForUser(
     bumpCacheVersion("products:detail"),
   ]);
 
-  return order;
+  return Object.assign(result.order, { alreadyExisted: result.alreadyExisted });
 }
 
 export async function confirmOrderPayment(

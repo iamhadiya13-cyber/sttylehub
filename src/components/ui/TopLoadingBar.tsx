@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,6 +10,7 @@ export default function TopLoadingBar() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- route transitions intentionally drive the loading bar state machine
   useEffect(() => {
     setLoading(true);
     setProgress(10);

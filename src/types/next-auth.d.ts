@@ -9,7 +9,6 @@ declare module "next-auth" {
       avatar?: string;
       isVerified?: boolean;
       isBanned?: boolean;
-      colorway?: "void" | "infrared" | "arctic";
     };
   }
 
@@ -18,7 +17,6 @@ declare module "next-auth" {
     avatar?: string;
     isVerified?: boolean;
     isBanned?: boolean;
-    colorway?: "void" | "infrared" | "arctic";
   }
 }
 
@@ -29,6 +27,5 @@ declare module "next-auth/jwt" {
     avatar?: string;
     isVerified?: boolean;
     isBanned?: boolean;
-    colorway?: "void" | "infrared" | "arctic";
   }
 }

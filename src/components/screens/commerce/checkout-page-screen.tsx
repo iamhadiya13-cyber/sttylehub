@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -122,6 +122,11 @@ export function CheckoutPageScreen() {
   const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "stripe" | "cod">("razorpay");
   const [placing, setPlacing] = useState(false);
   const [validation, setValidation] = useState<CheckoutValidation | null>(null);
+  const idempotencyKeyRef = useRef(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   const [validationLoading, setValidationLoading] = useState(false);
   const [validationError, setValidationError] = useState("");
   const {
@@ -198,6 +203,7 @@ export function CheckoutPageScreen() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            idempotencyKey: idempotencyKeyRef.current,
             items: items.map((item) => ({
               productId: item.productId,
               variantId: item.variantId,
@@ -389,7 +395,7 @@ export function CheckoutPageScreen() {
       });
       const orderJson = (await orderResponse.json()) as {
         success: boolean;
-        data?: { _id?: string; id?: string };
+        data?: { _id?: string; id?: string; alreadyExisted?: boolean };
         message?: string;
         code?: string;
         invalidItems?: InvalidCheckoutItem[];
@@ -447,11 +453,26 @@ export function CheckoutPageScreen() {
         key: razorpayJson.data?.keyId,
         order_id: razorpayJson.data?.rzpOrderId,
         handler: async (response: Record<string, string>) => {
-          await fetch("/api/payment/razorpay/verify", {
+          const verifyResponse = await fetch("/api/payment/razorpay/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ...response, orderId }),
           });
+          const verifyJson = (await verifyResponse.json().catch(() => null)) as {
+            success?: boolean;
+            message?: string;
+            error?: string;
+          } | null;
+
+          if (!verifyResponse.ok || !verifyJson?.success) {
+            toast.error(
+              verifyJson?.message ||
+                verifyJson?.error ||
+                "Payment verification failed. Please contact support with your order ID.",
+            );
+            return;
+          }
+
           clearCart();
           router.push(`/orders/${orderId}?success=true`);
         },

@@ -41,8 +41,11 @@ type CartState = {
     variantId?: string,
   ) => void;
   clearCart: () => void;
+  clearStore: () => void;
   setCoupon: (coupon: { code: string; discount: number; couponId?: string } | null) => void;
 };
+
+const CART_STORAGE_KEY = "stylehub-cart";
 
 const computeTotals = (items: CartItem[]) => ({
   totalItems: items.reduce((sum, item) => sum + item.qty, 0),
@@ -126,10 +129,16 @@ export const useCartStore = create<CartState>()(
           return { items, ...computeTotals(items) };
         }),
       clearCart: () => set({ items: [], coupon: null, totalItems: 0, totalPrice: 0 }),
+      clearStore: () => {
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(CART_STORAGE_KEY);
+        }
+        set({ items: [], coupon: null, totalItems: 0, totalPrice: 0 });
+      },
       setCoupon: (coupon) => set({ coupon }),
     }),
     {
-      name: "stylehub-cart",
+      name: CART_STORAGE_KEY,
     },
   ),
 );

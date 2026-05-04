@@ -5,7 +5,6 @@ import { Providers } from "@/components/providers/providers";
 import BrandSplash from "@/components/ui/BrandSplash";
 import ConfirmModalHost from "@/components/ui/ConfirmModalHost";
 import PageLoadingOverlay from "@/components/ui/PageLoadingOverlay";
-import ThemeInkBleed from "@/components/ui/ThemeInkBleed";
 import TopLoadingBar from "@/components/ui/TopLoadingBar";
 import { authOptions } from "@/lib/auth";
 import { absoluteUrl, getSiteUrlObject } from "@/lib/seo/site";
@@ -84,18 +83,10 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="en" className={spaceGrotesk.variable} data-theme="void">
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var p=window.location.pathname||"/";var backoffice=p.indexOf("/admin")===0||p.indexOf("/seller")===0;var raw=localStorage.getItem("stylehub-theme");var theme="void";if(!backoffice&&raw){try{var parsed=JSON.parse(raw);theme=(parsed&&parsed.state&&parsed.state.theme)||raw;}catch(e){theme=raw;}if(["void","infrared","arctic"].indexOf(theme)===-1){theme="void";}}document.documentElement.setAttribute("data-theme",backoffice?"void":theme);}catch(e){document.documentElement.setAttribute("data-theme","void");}})();`,
-          }}
-        />
-      </head>
+    <html lang="en" className={spaceGrotesk.variable}>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers session={session}>
           <BrandSplash />
-          <ThemeInkBleed />
           <PageLoadingOverlay />
           <TopLoadingBar />
           {children}

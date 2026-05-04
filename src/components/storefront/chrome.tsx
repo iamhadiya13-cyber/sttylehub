@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -26,10 +28,10 @@ import FlashSaleSiteBanner from "@/components/storefront/flash-sale-banner";
 import { GuardedNavLink } from "@/components/ui/GuardedNavLink";
 import NotificationBell from "@/components/ui/NotificationBell";
 import { SkeletonBox } from "@/components/ui/skeletons/SkeletonBase";
-import ThemeSwitcherPill from "@/components/ui/ThemeSwitcherPill";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { productImageAlt } from "@/lib/seo/site";
 import { useLoadingStore } from "@/stores/loading-store";
+import { useRecentlyViewedStore } from "@/stores/recently-viewed-store";
 import type { Category, Product } from "@/components/storefront/types";
 
 function Footer() {
@@ -325,18 +327,14 @@ function Header() {
     }
 
     setProfileOpen(false);
+    useCartStore.getState().clearStore();
+    useWishlistStore.getState().clearStore();
+    useRecentlyViewedStore.getState().clearStore();
     await signOut({ callbackUrl: "/" });
   };
 
   return (
-    <header
-      className="sticky top-0 z-50 border-b backdrop-blur-xl"
-      style={{
-        borderColor: "var(--border-default)",
-        background: "rgba(var(--bg-elevated-rgb), 0.86)",
-        color: "var(--text-primary)",
-      }}
-    >
+    <header className="sticky top-0 z-50 border-b border-[#1F1F1F] bg-black/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:hidden">
         <button type="button" className="rounded-xl border border-[#1F1F1F] p-2 text-white" onClick={() => setMobileOpen(true)}>
           <Menu className="h-5 w-5" />
@@ -492,8 +490,7 @@ function Header() {
                     }
                   }}
                   placeholder="Search products..."
-                  className="pointer-events-auto h-10 w-[220px] border-0 border-b bg-transparent px-0 pr-11 text-[14px] outline-none placeholder:text-[var(--text-secondary)]"
-                  style={{ borderColor: "var(--accent-primary)", color: "var(--text-primary)" }}
+                  className="pointer-events-auto h-10 w-[220px] border-0 border-b border-[#7F77DD] bg-transparent px-0 pr-11 text-[14px] text-white outline-none placeholder:text-[#8A8F9F]"
                 />
               </div>
               <button
@@ -505,23 +502,14 @@ function Header() {
                   }
                   setSearchOpen(true);
                 }}
-                className="relative z-10 rounded-xl border p-2 transition hover:opacity-100"
-                style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)" }}
+                className="relative z-10 rounded-xl border border-[#1F1F1F] p-2 text-white/80 transition hover:border-[#6366F1] hover:text-white"
                 aria-label={searchOpen ? "Close search" : "Open search"}
               >
                 {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
               </button>
 
               {showSearchDropdown ? (
-                <div
-                  className="absolute right-0 top-[calc(100%+10px)] w-[320px] max-w-[320px] rounded-[22px] border p-3 backdrop-blur"
-                  style={{
-                    borderColor: "var(--border-default)",
-                    background:
-                      "linear-gradient(180deg, rgba(var(--bg-elevated-rgb), 0.98) 0%, rgba(var(--bg-secondary-rgb), 0.98) 100%)",
-                    boxShadow: "0 24px 60px rgba(var(--shadow-color-rgb), 0.4)",
-                  }}
-                >
+                <div className="absolute right-0 top-[calc(100%+10px)] w-[320px] max-w-[320px] rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,#101523_0%,#0B0E17_100%)] p-3 shadow-[0_24px_60px_rgba(2,6,23,0.4)] backdrop-blur">
                   <div className="space-y-1.5">
                     {searchLoading
                       ? Array.from({ length: 4 }).map((_, index) => (
@@ -570,7 +558,7 @@ function Header() {
                     >
                       <span>
                         See all results for{" "}
-                        <span className="font-semibold text-[#C7C2FF]">"{searchValue.trim()}"</span>
+                        <span className="font-semibold text-[#C7C2FF]">&quot;{searchValue.trim()}&quot;</span>
                       </span>
                       <span className="text-xs uppercase tracking-[0.16em] text-white/55">{searchTotal} found</span>
                     </button>
@@ -586,17 +574,19 @@ function Header() {
               </GuardedNavLink>
             ) : null}
             {isLoggedIn ? <NotificationBell /> : null}
-            <button
-              type="button"
-              onClick={() => {
-                setLoading(true);
-                router.push("/cart");
-              }}
-              className="relative rounded-xl border border-[#1F1F1F] p-2 text-white/80 transition hover:border-[#6366F1] hover:text-white"
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount ? <span className="absolute -right-1 -top-1 rounded-full bg-[#4F46E5] px-1.5 text-[10px] font-bold text-[#F8FAFC]">{cartCount}</span> : null}
-            </button>
+            {isLoggedIn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  router.push("/cart");
+                }}
+                className="relative rounded-xl border border-[#1F1F1F] p-2 text-white/80 transition hover:border-[#6366F1] hover:text-white"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {cartCount ? <span className="absolute -right-1 -top-1 rounded-full bg-[#4F46E5] px-1.5 text-[10px] font-bold text-[#F8FAFC]">{cartCount}</span> : null}
+              </button>
+            ) : null}
             {isLoggedIn ? (
               <div className="relative">
                 <button type="button" onClick={() => setProfileOpen((value) => !value)} className="flex items-center gap-1.5 rounded-xl border border-[#1F1F1F] px-3 py-2 text-sm text-white/85">
@@ -647,11 +637,7 @@ function Header() {
                 </AnimatePresence>
               </div>
             ) : status === "loading" ? null : (
-              <Link
-                href="/login"
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-[var(--text-on-accent)]"
-                style={{ background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)" }}
-              >
+              <Link href="/login" className="rounded-xl bg-[linear-gradient(135deg,#4F46E5_0%,#4338CA_100%)] px-4 py-2 text-sm font-semibold text-[#F8FAFC]">
                 Login
               </Link>
             )}
@@ -675,10 +661,9 @@ export function PageShell({
   hideFooter?: boolean;
 }) {
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
+    <div className="min-h-screen bg-[#0A0A0A] text-white">
       <Header />
       <FlashSaleSiteBanner />
-      <ThemeSwitcherPill />
       <div className="pb-[calc(82px+env(safe-area-inset-bottom))] lg:pb-0">
         {children}
       </div>

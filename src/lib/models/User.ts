@@ -28,7 +28,6 @@ const UserSchema = new Schema(
     phone: { type: String, default: "" },
     dateOfBirth: { type: Date, default: null },
     genderPreference: { type: String, enum: ["men", "women", "unisex"], default: "unisex" },
-    colorway: { type: String, enum: ["void", "infrared", "arctic"], default: "void" },
     addresses: [AddressSchema],
     isVerified: { type: Boolean, default: false },
     isBanned: { type: Boolean, default: false, index: true },

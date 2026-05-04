@@ -79,6 +79,7 @@ async function notifyAdminAndApplicant(input: {
   const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
   if (adminEmail) {
+    try {
     await sendEmail({
       to: adminEmail,
       subject: `🏪 New Vendor Application — ${input.shopName}`,
@@ -95,16 +96,23 @@ async function notifyAdminAndApplicant(input: {
         reviewLink: `${appUrl}/admin/sellers`,
       }),
     });
+    } catch (emailError) {
+      console.error("Admin seller application email failed:", emailError);
+    }
   }
 
-  await sendEmail({
+  try {
+    await sendEmail({
     to: input.userEmail,
     subject: "Application received — StyleHub",
     html: applicationReceivedEmail({
       name: input.userName,
       shopName: input.shopName,
     }),
-  });
+    });
+  } catch (emailError) {
+    console.error("Applicant confirmation email failed:", emailError);
+  }
 
   await createNotification({
     type: "new_seller_application",

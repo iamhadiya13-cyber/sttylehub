@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAdmin } from "@/lib/api-helpers";
 import { connectDB } from "@/lib/db";
 import Notification from "@/lib/models/Notification";
+import { notificationUpdateSchema } from "@/lib/validators";
 
 export const GET = withAdmin(async (request) => {
   try {
@@ -41,7 +42,7 @@ export const GET = withAdmin(async (request) => {
 export const PUT = withAdmin(async (request) => {
   try {
     await connectDB();
-    const body = (await request.json().catch(() => ({}))) as { id?: string; markAll?: boolean };
+    const body = notificationUpdateSchema.parse(await request.json().catch(() => ({})));
     if (body.markAll) {
       await Notification.updateMany({ recipientUserId: null, isRead: false }, { $set: { isRead: true } });
     } else if (body.id) {

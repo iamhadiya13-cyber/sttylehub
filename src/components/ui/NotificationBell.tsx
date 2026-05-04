@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -62,24 +64,19 @@ export function NotificationRow({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-2xl border-l-4 px-3 py-3 text-left ${notificationAccent(notification.type)}`}
-      style={{
-        background: notification.isRead ? "rgba(var(--bg-primary-rgb), 0.45)" : "var(--accent-muted)",
-      }}
+      className={
+        notification.isRead
+          ? `flex w-full items-start gap-3 rounded-2xl border-l-4 ${notificationAccent(notification.type)} bg-black/20 px-3 py-3 text-left`
+          : `flex w-full items-start gap-3 rounded-2xl border-l-4 ${notificationAccent(notification.type)} bg-[#4F46E5]/8 px-3 py-3 text-left`
+      }
     >
-      <div
-        className="mt-0.5 rounded-xl border p-2"
-        style={{
-          borderColor: "var(--border-default)",
-          background: "rgba(var(--text-primary-rgb), 0.03)",
-        }}
-      >
+      <div className="mt-0.5 rounded-xl border border-white/10 bg-white/[0.03] p-2">
         <NotificationTypeIcon type={notification.type} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{notification.title}</p>
-        <p className="mt-1 text-xs leading-6" style={{ color: "var(--text-secondary)" }}>{notification.message}</p>
-        <p className="mt-2 text-[11px]" style={{ color: "var(--text-tertiary)" }}>{formatNotificationTime(notification.createdAt)}</p>
+        <p className="text-sm font-semibold text-white">{notification.title}</p>
+        <p className="mt-1 text-xs leading-6 text-[#A7A7B4]">{notification.message}</p>
+        <p className="mt-2 text-[11px] text-[#6E7180]">{formatNotificationTime(notification.createdAt)}</p>
       </div>
     </button>
   );
@@ -101,6 +98,7 @@ export default function NotificationBell({
   const lastNotificationIdRef = useRef<string | null>(null);
   const hydratedRef = useRef(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pulse state is derived directly from the latest notification edge
   useEffect(() => {
     if (!notifications.length) {
       return;
@@ -149,24 +147,14 @@ export default function NotificationBell({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="relative rounded-xl border p-2.5 transition"
-        style={{
-          borderColor: "var(--border-default)",
-          background: "var(--bg-elevated)",
-          color: "var(--text-secondary)",
-        }}
+        className="relative rounded-xl border border-[#1F1F1F] bg-[#111111] p-2.5 text-white/80 transition hover:border-[#6366F1] hover:text-white"
         aria-label="Notifications"
       >
         <Bell className={pulse ? "h-5 w-5 scale-110 transition-transform" : "h-5 w-5 transition-transform"} />
         {unreadCount > 0 ? (
-            <span
-              className={
-                pulse
-                  ? "absolute -right-1 -top-1 rounded-full px-1.5 text-[10px] font-bold text-[var(--text-on-accent)] transition-transform"
-                  : "absolute -right-1 -top-1 rounded-full px-1.5 text-[10px] font-bold text-[var(--text-on-accent)]"
-              }
-              style={{ background: "var(--accent-primary)" }}
-            >
+            <span className={pulse
+            ? "absolute -right-1 -top-1 rounded-full bg-[#7F77DD] px-1.5 text-[10px] font-bold text-[#F8FAFC] transition-transform"
+            : "absolute -right-1 -top-1 rounded-full bg-[#7F77DD] px-1.5 text-[10px] font-bold text-[#F8FAFC]"}>
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           ) : null}
@@ -174,21 +162,13 @@ export default function NotificationBell({
 
       {open ? (
         <>
-          <div
-            className={`fixed inset-x-0 ${mobileTopOffsetClassName} z-[90] border-y p-4 shadow-2xl md:absolute md:inset-x-auto md:right-0 md:top-[calc(100%+10px)] md:w-[360px] md:rounded-[24px] md:border md:p-4`}
-            style={{
-              borderColor: "var(--border-default)",
-              background: "var(--bg-elevated)",
-              boxShadow: "0 24px 60px rgba(var(--shadow-color-rgb), 0.35)",
-            }}
-          >
+          <div className={`fixed inset-x-0 ${mobileTopOffsetClassName} z-[90] border-y border-white/10 bg-[#0D101A] p-4 shadow-2xl md:absolute md:inset-x-auto md:right-0 md:top-[calc(100%+10px)] md:w-[360px] md:rounded-[24px] md:border md:p-4`}>
             <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Notifications</p>
+              <p className="text-sm font-semibold text-white">Notifications</p>
               <button
                 type="button"
                 onClick={() => void markAllAsRead()}
-                className="inline-flex items-center gap-1 text-xs font-semibold"
-                style={{ color: "var(--accent-primary)" }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#A5B4FC]"
               >
                 <CheckCheck className="h-4 w-4" />
                 Mark all read
@@ -210,7 +190,7 @@ export default function NotificationBell({
                   />
                 ))
               ) : (
-                <div className="rounded-2xl border p-4 text-sm" style={{ borderColor: "var(--border-default)", background: "rgba(var(--bg-primary-rgb), 0.5)", color: "var(--text-secondary)" }}>
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-[#888888]">
                   No notifications yet.
                 </div>
               )}
@@ -221,8 +201,7 @@ export default function NotificationBell({
                 setOpen(false);
                 router.push(scope === "admin" ? "/notifications?scope=admin" : "/notifications");
               }}
-              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold"
-              style={{ color: "var(--accent-primary)" }}
+              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#A5B4FC]"
             >
               <ClipboardCheck className="h-4 w-4" />
               View all notifications

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -55,6 +57,7 @@ export function OrdersPageScreen() {
     { orders: [], total: 0, page: 1, totalPages: 1 },
   );
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- changing the order status filter should always reset pagination to page 1
   useEffect(() => {
     setPage(1);
   }, [status]);
@@ -341,7 +344,7 @@ export function OrderDetailPageScreen({ id }: { id: string }) {
             <div>
               <h3 style={{ color: "#22C55E", fontSize: 18, fontWeight: 700, margin: 0 }}>Order Placed Successfully!</h3>
               <p style={{ color: "#888", fontSize: 14, margin: "4px 0 0" }}>
-                We'll send you updates at {session?.user?.email || "your email"}
+                We&apos;ll send you updates at {session?.user?.email || "your email"}
               </p>
             </div>
           </motion.div>
@@ -1138,13 +1141,9 @@ export function WishlistPageScreen() {
   const items = useWishlistStore((state) => state.items);
   const remove = useWishlistStore((state) => state.remove);
   const addItem = useCartStore((state) => state.addItem);
-  const [mounted, setMounted] = useState(false);
+  const [mounted] = useState(() => typeof window !== "undefined");
   const [verificationOpen, setVerificationOpen] = useState(false);
   const isVerifiedUser = Boolean(status === "authenticated" && resolvedIsVerified);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <PageShell>

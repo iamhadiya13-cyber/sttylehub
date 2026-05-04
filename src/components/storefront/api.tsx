@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useCartStore } from "@/stores/cart-store";
+import { useRecentlyViewedStore } from "@/stores/recently-viewed-store";
+import { useWishlistStore } from "@/stores/wishlist-store";
 
 const clientCache = new Map<string, { expiresAt: number; value: unknown }>();
 const inflightRequests = new Map<string, Promise<unknown>>();
@@ -71,6 +74,14 @@ export async function fetchJson<T>(
       data?: T;
       message?: string;
     };
+
+    if (response.status === 401 && typeof window !== "undefined") {
+      useCartStore.getState().clearStore();
+      useWishlistStore.getState().clearStore();
+      useRecentlyViewedStore.getState().clearStore();
+      window.location.href = "/login?reason=session_expired";
+      throw new Error("Session expired");
+    }
 
     if (!response.ok || !json.success) {
       throw new Error(json.message || "Request failed");

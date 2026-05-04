@@ -60,7 +60,7 @@ export function SkeletonBox({
         height,
         borderRadius,
         backgroundImage:
-          "linear-gradient(90deg, rgba(var(--text-primary-rgb),0.04) 0%, rgba(var(--text-primary-rgb),0.09) 50%, rgba(var(--text-primary-rgb),0.04) 100%)",
+          "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%)",
         backgroundSize: "200% 100%",
         animation: `${SKELETON_ANIMATION_NAME} 1.8s ease-in-out infinite`,
       }}

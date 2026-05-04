@@ -48,11 +48,17 @@ export function MobileBottomNav() {
             { href: "/seller/dashboard", label: "Dashboard", icon: LayoutDashboard },
             { href: "/profile", label: "Account", icon: SquareUserRound },
           ]
-        : [
+        : status === "authenticated"
+          ? [
             { href: "/", label: "Home", icon: Home },
             { href: "/products", label: "Shop", icon: ShoppingBag, match: (current) => current === "/products" || current.startsWith("/products") || current === "/search" || current.startsWith("/search") },
             { href: "/cart", label: "Cart", icon: ShoppingBag, badge: cartCount, match: (current) => current === "/cart" || current === "/checkout" || current.startsWith("/checkout") },
             { href: "/wishlist", label: "Wishlist", icon: Heart, badge: wishlistCount },
+            { href: "/profile", label: "Account", icon: SquareUserRound, match: (current) => current === "/profile" || current.startsWith("/profile") || current === "/orders" || current.startsWith("/orders") },
+          ]
+          : [
+            { href: "/", label: "Home", icon: Home },
+            { href: "/products", label: "Shop", icon: ShoppingBag, match: (current) => current === "/products" || current.startsWith("/products") || current === "/search" || current.startsWith("/search") },
             { href: "/profile", label: "Account", icon: SquareUserRound, match: (current) => current === "/profile" || current.startsWith("/profile") || current === "/orders" || current.startsWith("/orders") },
           ];
 
@@ -60,7 +66,7 @@ export function MobileBottomNav() {
     return null;
   }
 
-  const useGuardedNav = (href: string) =>
+  const isGuardedNav = (href: string) =>
     href === "/profile" ||
     href === "/orders" ||
     href === "/wishlist" ||
@@ -69,39 +75,38 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t lg:hidden"
-      style={{
-        paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)",
-        borderColor: "var(--border-default)",
-        background: "var(--bg-elevated)",
-      }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[#22252F] bg-[#0A0A0A] lg:hidden"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)" }}
       aria-label="Mobile bottom navigation"
     >
-      <div className="mx-auto grid max-w-xl grid-cols-5 px-2 pt-2">
+      <div
+        className="mx-auto grid max-w-xl px-2 pt-2"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => {
           const active = item.match ? item.match(pathname) : isActivePath(pathname, item.href);
           const Icon = item.icon;
 
           return (
             <div key={item.label}>
-              {useGuardedNav(item.href) ? (
+              {isGuardedNav(item.href) ? (
                 <GuardedNavLink
                   href={item.href}
                   className={cn(
                     "relative flex min-h-[62px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-medium transition",
-                    active ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]",
+                    active ? "text-[#7F77DD]" : "text-[#8C8C8C]",
                   )}
                 >
                   <div
                     className={cn(
                       "absolute inset-x-2 top-1 h-[42px] rounded-2xl transition",
-                      active ? "bg-[var(--accent-muted)]" : "bg-transparent",
+                      active ? "bg-[rgba(127,119,221,0.14)]" : "bg-transparent",
                     )}
                   />
                   <div className="relative">
-                    <Icon className={cn("h-5 w-5", active ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]")} />
+                    <Icon className={cn("h-5 w-5", active ? "text-[#7F77DD]" : "text-[#8C8C8C]")} />
                     {item.badge ? (
-                      <span className="absolute -right-2 -top-2 rounded-full px-1.5 text-[9px] font-bold leading-4 text-[var(--text-on-accent)]" style={{ background: "var(--accent-primary)" }}>
+                      <span className="absolute -right-2 -top-2 rounded-full bg-[#4F46E5] px-1.5 text-[9px] font-bold leading-4 text-[#F8FAFC]">
                         {item.badge > 9 ? "9+" : item.badge}
                       </span>
                     ) : null}
@@ -113,19 +118,19 @@ export function MobileBottomNav() {
                   href={item.href}
                   className={cn(
                     "relative flex min-h-[62px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-medium transition",
-                    active ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]",
+                    active ? "text-[#7F77DD]" : "text-[#8C8C8C]",
                   )}
                 >
                   <div
                     className={cn(
                       "absolute inset-x-2 top-1 h-[42px] rounded-2xl transition",
-                      active ? "bg-[var(--accent-muted)]" : "bg-transparent",
+                      active ? "bg-[rgba(127,119,221,0.14)]" : "bg-transparent",
                     )}
                   />
                   <div className="relative">
-                    <Icon className={cn("h-5 w-5", active ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]")} />
+                    <Icon className={cn("h-5 w-5", active ? "text-[#7F77DD]" : "text-[#8C8C8C]")} />
                     {item.badge ? (
-                      <span className="absolute -right-2 -top-2 rounded-full px-1.5 text-[9px] font-bold leading-4 text-[var(--text-on-accent)]" style={{ background: "var(--accent-primary)" }}>
+                      <span className="absolute -right-2 -top-2 rounded-full bg-[#4F46E5] px-1.5 text-[9px] font-bold leading-4 text-[#F8FAFC]">
                         {item.badge > 9 ? "9+" : item.badge}
                       </span>
                     ) : null}

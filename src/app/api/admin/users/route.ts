@@ -3,6 +3,7 @@ import { apiSuccess } from "@/lib/api";
 import { withAdmin } from "@/lib/api-helpers";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
+import { adminDeleteUserSchema } from "@/lib/validators";
 
 const updateSchema = z.object({
   userId: z.string().min(1),
@@ -57,7 +58,7 @@ export const PUT = withAdmin(async (request) => {
 
 export const DELETE = withAdmin(async (request) => {
   try {
-    const { userId } = (await request.json()) as { userId: string };
+    const { userId } = adminDeleteUserSchema.parse(await request.json());
     await connectDB();
     await User.findByIdAndDelete(userId);
     return apiSuccess(null, "User deleted successfully");

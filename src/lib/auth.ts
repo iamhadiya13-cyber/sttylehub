@@ -48,7 +48,6 @@ export const authOptions: NextAuthOptions = {
           avatar: user.avatar,
           isVerified: user.isVerified,
           isBanned: user.isBanned,
-          colorway: user.colorway ?? "void",
         };
       },
     }),
@@ -69,7 +68,6 @@ export const authOptions: NextAuthOptions = {
         token.avatar = (user as { avatar?: string }).avatar;
         token.isVerified = (user as { isVerified?: boolean }).isVerified;
         token.isBanned = (user as { isBanned?: boolean }).isBanned;
-        token.colorway = (user as { colorway?: "void" | "infrared" | "arctic" }).colorway;
       }
 
       if (trigger === "update" && session?.user) {
@@ -85,9 +83,6 @@ export const authOptions: NextAuthOptions = {
         if (typeof session.user.isBanned === "boolean") {
           token.isBanned = session.user.isBanned;
         }
-        if (typeof session.user.colorway === "string") {
-          token.colorway = session.user.colorway;
-        }
       }
 
       return token;
@@ -99,7 +94,6 @@ export const authOptions: NextAuthOptions = {
         session.user.avatar = token.avatar as string;
         session.user.isVerified = token.isVerified as boolean | undefined;
         session.user.isBanned = token.isBanned as boolean | undefined;
-        session.user.colorway = token.colorway as "void" | "infrared" | "arctic" | undefined;
       }
       return session;
     },

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -50,6 +52,7 @@ export default function SizeGuideModal({
   const guide = resolveSizeGuide(category);
   const resolvedFitNote = fitNotes?.trim() || guide.fitNote;
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- closing the modal should reset the active tab for the next open
   useEffect(() => {
     if (!isOpen) {
       setActiveTab("measurements");

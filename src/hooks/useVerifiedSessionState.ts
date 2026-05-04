@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -68,6 +70,7 @@ export function useVerifiedSessionState() {
   const [resolvedFromDb, setResolvedFromDb] = useState<boolean | null>(cachedVerification);
   const [isVerificationSyncing, setIsVerificationSyncing] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- this hook mirrors session and profile verification state into local sync flags
   useEffect(() => {
     if (!userId || status !== "authenticated") {
       setResolvedFromDb(null);

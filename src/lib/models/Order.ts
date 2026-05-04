@@ -48,6 +48,7 @@ const OrderStatusHistorySchema = new Schema(
 const OrderSchema = new Schema(
   {
     orderNumber: { type: String, required: true, unique: true, index: true },
+    idempotencyKey: { type: String, required: true, unique: true, index: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     items: { type: [OrderItemSchema], required: true, default: [] },
     shippingAddress: { type: ShippingAddressSchema, required: true },
@@ -78,6 +79,8 @@ const OrderSchema = new Schema(
   },
   { timestamps: true },
 );
+
+OrderSchema.index({ createdAt: -1 });
 
 export type OrderDocument = InferSchemaType<typeof OrderSchema>;
 export type OrderItemDocument = InferSchemaType<typeof OrderItemSchema>;

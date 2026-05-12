@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 
 export type StreamNotification = {
@@ -54,6 +55,7 @@ function normalizeNotification(
 
 export function useNotificationStream(options?: UseNotificationStreamOptions) {
   const pathname = usePathname();
+  const { status } = useSession();
   const scope = options?.scope || "personal";
   const params = new URLSearchParams();
   if (scope === "admin") {
@@ -81,6 +83,10 @@ export function useNotificationStream(options?: UseNotificationStreamOptions) {
   const establishedRef = useRef(false);
 
   const fetchLatest = useCallback(async () => {
+    if (status !== "authenticated") {
+      return;
+    }
+
     const response = await fetch(apiPath, { cache: "no-store" });
     const json = (await response.json()) as {
       success: boolean;
@@ -93,7 +99,7 @@ export function useNotificationStream(options?: UseNotificationStreamOptions) {
 
     setNotifications(json.data.items.map(normalizeNotification));
     setUnreadCount(json.data.unreadCount || 0);
-  }, [apiPath]);
+  }, [apiPath, status]);
 
   const startPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -134,6 +140,10 @@ export function useNotificationStream(options?: UseNotificationStreamOptions) {
   const connect = useCallback(() => {
     closeEventSource();
     stopPolling();
+
+    if (status !== "authenticated") {
+      return;
+    }
 
     if (typeof window === "undefined" || typeof EventSource === "undefined") {
       startPolling();
@@ -183,7 +193,7 @@ export function useNotificationStream(options?: UseNotificationStreamOptions) {
       }
       scheduleReconnect();
     };
-  }, [closeEventSource, fetchLatest, pathname, scheduleReconnect, startPolling, stopPolling, streamPath]);
+  }, [closeEventSource, fetchLatest, pathname, scheduleReconnect, startPolling, status, stopPolling, streamPath]);
 
   useEffect(() => {
     connectRef.current = connect;
@@ -191,6 +201,14 @@ export function useNotificationStream(options?: UseNotificationStreamOptions) {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch primes the local notification cache before live updates attach
   useEffect(() => {
+    if (status !== "authenticated") {
+      closeEventSource();
+      stopPolling();
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     void fetchLatest();
     connect();
 
@@ -201,7 +219,7 @@ export function useNotificationStream(options?: UseNotificationStreamOptions) {
         clearTimeout(reconnectRef.current);
       }
     };
-  }, [closeEventSource, connect, fetchLatest, stopPolling]);
+  }, [closeEventSource, connect, fetchLatest, status, stopPolling]);
 
   const markAsRead = useCallback(
     async (notificationId: string) => {

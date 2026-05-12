@@ -55,9 +55,9 @@ export function LoginPageScreen() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      router.push("/");
+      router.push(callbackUrl);
     }
-  }, [router, status]);
+  }, [callbackUrl, router, status]);
 
   useEffect(() => {
     if (reason === "session_expired") {

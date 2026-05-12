@@ -190,19 +190,9 @@ function validatePaymentDetails(value: z.infer<typeof orderBaseSchema>, ctx: z.R
 
 export const orderCreateSchema = orderBaseSchema.superRefine(validatePaymentDetails);
 
-export const orderValidationSchema = orderBaseSchema
-  .extend({
-    shippingAddressId: z.string().min(1).optional(),
-  })
-  .superRefine((value, ctx) =>
-    validatePaymentDetails(
-      {
-        ...value,
-        shippingAddressId: value.shippingAddressId || "",
-      },
-      ctx,
-    ),
-  );
+export const orderValidationSchema = orderBaseSchema.extend({
+  shippingAddressId: z.string().min(1).optional(),
+});
 
 export const cancelOrderSchema = z.object({
   reason: z.string().min(1).max(500),

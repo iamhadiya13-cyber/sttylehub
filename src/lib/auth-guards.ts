@@ -45,10 +45,6 @@ export async function requireAdminUser(callbackUrl: string) {
   const session = await requireAuthenticatedUser(callbackUrl);
   const authState = await getCurrentAuthState(session.user.id);
 
-  if (!authState.isVerified) {
-    redirect("/profile?verification=required");
-  }
-
   if (authState.role !== "admin") {
     redirect("/");
   }
@@ -59,10 +55,6 @@ export async function requireAdminUser(callbackUrl: string) {
 export async function requireSellerUser(callbackUrl: string) {
   const session = await requireAuthenticatedUser(callbackUrl);
   const authState = await getCurrentAuthState(session.user.id);
-
-  if (!authState.isVerified) {
-    redirect("/profile?verification=required");
-  }
 
   if (authState.role !== "seller" && authState.role !== "admin") {
     redirect("/");

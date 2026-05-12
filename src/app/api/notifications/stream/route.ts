@@ -1,4 +1,5 @@
 import { getToken } from "next-auth/jwt";
+import { type NextRequest } from "next/server";
 import { getRedisClient } from "@/lib/redis";
 
 export const runtime = "edge";
@@ -34,9 +35,9 @@ function encodeMessage(event: string, data: string) {
   return `event: ${event}\ndata: ${data}\n\n`;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const token = (await getToken({
-    req: request as never,
+    req: request,
     secret: process.env.NEXTAUTH_SECRET,
   })) as SessionToken | null;
 

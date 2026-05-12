@@ -69,12 +69,12 @@ function AdminMobileDrawer({
       />
       <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(86vw,320px)] flex-col border-r border-white/8 bg-[#0A0D18] lg:hidden">
         <div className="flex items-center justify-between border-b border-[#1F1F1F] px-4 py-5">
-          <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.08em] text-white">
+          <Link href="/" onClick={onClose} className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.08em] text-white">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#4F46E5] text-[15px] font-extrabold text-[#F8FAFC]">
               S
             </span>
             StyleHub
-          </div>
+          </Link>
           <button
             type="button"
             onClick={onClose}
@@ -157,12 +157,12 @@ export function AdminSidebar() {
 
   return (
     <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-[220px] border-r border-white/8 bg-[#0A0D18] lg:block">
-      <div className="flex items-center gap-3 border-b border-[#1F1F1F] px-4 py-5 text-sm font-bold uppercase tracking-[0.08em] text-white">
+      <Link href="/" className="flex items-center gap-3 border-b border-[#1F1F1F] px-4 py-5 text-sm font-bold uppercase tracking-[0.08em] text-white">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#4F46E5] text-[15px] font-extrabold text-[#F8FAFC]">
           S
         </span>
         StyleHub
-      </div>
+      </Link>
       <nav className="grid gap-[2px] p-2">
         {adminLinks.map((link) => {
           const active = isActivePath(pathname, link.href);

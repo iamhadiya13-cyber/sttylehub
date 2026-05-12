@@ -21,8 +21,8 @@ export type ProductVariant = {
 };
 
 export type AcceptedPayments = {
-  razorpay: boolean;
-  stripe: boolean;
+  upi: boolean;
+  creditCard: boolean;
   cod: boolean;
 };
 

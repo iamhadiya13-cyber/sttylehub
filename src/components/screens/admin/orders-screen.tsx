@@ -18,6 +18,39 @@ import {
   type PaginatedOrders,
 } from "@/components/screens/admin/shared";
 
+function formatPaymentMethod(paymentMethod: string) {
+  switch (paymentMethod) {
+    case "upi":
+      return "UPI";
+    case "credit_card":
+      return "Credit Card";
+    case "cod":
+      return "Cash on Delivery";
+    default:
+      return paymentMethod.toUpperCase();
+  }
+}
+
+function renderPaymentDetails(order: Order) {
+  if (order.paymentMethod === "upi" && order.paymentDetails?.upi?.upiId) {
+    return <p className="mt-1 text-xs text-[#888888]">{order.paymentDetails.upi.upiId}</p>;
+  }
+
+  if (order.paymentMethod === "credit_card" && order.paymentDetails?.creditCard) {
+    return (
+      <div className="mt-1 space-y-1 text-xs text-[#888888]">
+        <p>{order.paymentDetails.creditCard.cardholderName}</p>
+        <p>
+          {order.paymentDetails.creditCard.cardNumberMasked} / {order.paymentDetails.creditCard.expiryMonth}
+          /{order.paymentDetails.creditCard.expiryYear}
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export function AdminOrdersScreen() {
   const [page, setPage] = useState(1);
   const [tab, setTab] = useState<string>("all");
@@ -192,9 +225,10 @@ export function AdminOrdersScreen() {
                     {statusBadge(order.paymentStatus)}
                     {statusBadge(order.orderStatus)}
                   </div>
-                  <p className="mt-3 text-xs text-[#888888]">
-                    {order.paymentMethod.toUpperCase()}
-                  </p>
+                  <div className="mt-3">
+                    <p className="text-xs text-[#888888]">{formatPaymentMethod(order.paymentMethod)}</p>
+                    {renderPaymentDetails(order)}
+                  </div>
                   <div className="mt-4">{renderStatusSelect(order)}</div>
                 </div>
               ))}
@@ -226,7 +260,8 @@ export function AdminOrdersScreen() {
                       {tableCell(formatCurrency(order.total))}
                       {tableCell(
                         <div className="space-y-1">
-                          <p>{order.paymentMethod.toUpperCase()}</p>
+                          <p>{formatPaymentMethod(order.paymentMethod)}</p>
+                          {renderPaymentDetails(order)}
                           {statusBadge(order.paymentStatus)}
                         </div>,
                       )}

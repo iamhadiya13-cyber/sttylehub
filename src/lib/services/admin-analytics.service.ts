@@ -1,3 +1,4 @@
+import { Category } from "@/lib/models/Category";
 import { Order } from "@/lib/models/Order";
 import { Coupon } from "@/lib/models/Coupon";
 import { CouponRedemption } from "@/lib/models/CouponRedemption";
@@ -6,6 +7,8 @@ import { Review } from "@/lib/models/Review";
 import { getStoreConfig } from "@/lib/models/StoreConfig";
 import { Seller } from "@/lib/models/Seller";
 import { User } from "@/lib/models/User";
+
+void Category;
 
 function toDayKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -43,10 +46,66 @@ function buildDailySeries(
   return series;
 }
 
-export async function getAdminDashboardSnapshot() {
+function isValidMonthKey(value: string) {
+  return /^\d{4}-\d{2}$/.test(value);
+}
+
+function normalizeSelectedMonths(selectedMonths?: string[]) {
+  return [...new Set((selectedMonths || []).filter(isValidMonthKey))].sort();
+}
+
+function buildSeriesForSelectedMonths(
+  raw: Array<{ _id: string; revenue?: number; collectedRevenue?: number; orders?: number }>,
+  selectedMonths: string[],
+) {
+  const rawMap = new Map(raw.map((item) => [item._id, item]));
+  const series: Array<{
+    date: string;
+    revenue: number;
+    collectedRevenue: number;
+    orders: number;
+  }> = [];
+
+  for (const monthKey of selectedMonths) {
+    const [yearString, monthString] = monthKey.split("-");
+    const year = Number(yearString);
+    const monthIndex = Number(monthString) - 1;
+    const cursor = new Date(year, monthIndex, 1);
+    const limit = new Date(year, monthIndex + 1, 1);
+
+    while (cursor < limit) {
+      const key = toDayKey(cursor);
+      const matched = rawMap.get(key);
+      series.push({
+        date: key,
+        revenue: Number(matched?.revenue || 0),
+        collectedRevenue: Number(matched?.collectedRevenue || 0),
+        orders: Number(matched?.orders || 0),
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  return series;
+}
+
+export async function getAdminDashboardSnapshot(selectedMonths?: string[]) {
+  const normalizedMonths = normalizeSelectedMonths(selectedMonths);
   const startDate = new Date();
-  startDate.setHours(0, 0, 0, 0);
-  startDate.setDate(startDate.getDate() - 29);
+  const endDate = new Date();
+
+  if (normalizedMonths.length) {
+    const [firstYear, firstMonth] = normalizedMonths[0].split("-").map(Number);
+    const [lastYear, lastMonth] = normalizedMonths[normalizedMonths.length - 1].split("-").map(Number);
+    startDate.setFullYear(firstYear, firstMonth - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setFullYear(lastYear, lastMonth, 1);
+    endDate.setHours(0, 0, 0, 0);
+  } else {
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - 29);
+    endDate.setHours(23, 59, 59, 999);
+  }
   const storeConfig = await getStoreConfig();
   const lowStockThreshold = Number(storeConfig.lowStockThreshold || 5);
 
@@ -94,7 +153,13 @@ export async function getAdminDashboardSnapshot() {
       { $group: { _id: null, total: { $sum: "$total" } } },
     ]),
     Order.aggregate([
-      { $match: { createdAt: { $gte: startDate } } },
+      {
+        $match: {
+          createdAt: normalizedMonths.length
+            ? { $gte: startDate, $lt: endDate }
+            : { $gte: startDate, $lte: endDate },
+        },
+      },
       {
         $group: {
           _id: {
@@ -149,9 +214,14 @@ export async function getAdminDashboardSnapshot() {
       .lean(),
   ]);
 
-  const revenueChart = buildDailySeries(
-    revenueChartRaw as Array<{ _id: string; revenue?: number; collectedRevenue?: number; orders?: number }>,
-  );
+  const revenueChart = normalizedMonths.length
+    ? buildSeriesForSelectedMonths(
+        revenueChartRaw as Array<{ _id: string; revenue?: number; collectedRevenue?: number; orders?: number }>,
+        normalizedMonths,
+      )
+    : buildDailySeries(
+        revenueChartRaw as Array<{ _id: string; revenue?: number; collectedRevenue?: number; orders?: number }>,
+      );
 
   return {
     totalOrders,
@@ -176,6 +246,7 @@ export async function getAdminDashboardSnapshot() {
     outOfStockCount,
     lowStockProducts,
     outOfStockProducts,
+    selectedMonths: normalizedMonths,
   };
 }
 

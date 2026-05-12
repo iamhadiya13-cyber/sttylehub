@@ -33,7 +33,19 @@ type OrderPayload = {
     clientDiscountPrice?: number;
   }>;
   shippingAddressId?: string;
-  paymentMethod: "razorpay" | "stripe" | "cod";
+  paymentMethod: "upi" | "credit_card" | "cod";
+  paymentDetails?: {
+    upi?: {
+      upiId: string;
+    };
+    creditCard?: {
+      cardholderName: string;
+      cardNumber: string;
+      expiryMonth: string;
+      expiryYear: string;
+      cvv: string;
+    };
+  };
   couponCode?: string;
   couponId?: string;
 };
@@ -202,6 +214,32 @@ type ValidatedOrderItem = {
   seller: ProductDocument["seller"];
   category: ProductDocument["category"];
 };
+
+function sanitizePaymentDetails(payload: OrderPayload) {
+  if (payload.paymentMethod === "upi" && payload.paymentDetails?.upi?.upiId) {
+    return {
+      upi: {
+        upiId: payload.paymentDetails.upi.upiId.trim(),
+      },
+    };
+  }
+
+  if (payload.paymentMethod === "credit_card" && payload.paymentDetails?.creditCard) {
+    const rawNumber = payload.paymentDetails.creditCard.cardNumber.replace(/\s+/g, "");
+    const last4 = rawNumber.slice(-4);
+    return {
+      creditCard: {
+        cardholderName: payload.paymentDetails.creditCard.cardholderName.trim(),
+        cardLast4: last4,
+        cardNumberMasked: `${"*".repeat(Math.max(0, rawNumber.length - 4))}${last4}`,
+        expiryMonth: payload.paymentDetails.creditCard.expiryMonth.trim(),
+        expiryYear: payload.paymentDetails.creditCard.expiryYear.trim(),
+      },
+    };
+  }
+
+  return undefined;
+}
 
 export async function validateOrderItemsForUser(
   userId: string,
@@ -489,6 +527,7 @@ export async function createOrderForUser(
     items: items.map(({ category, ...item }) => item),
     shippingAddress,
     paymentMethod: payload.paymentMethod,
+    paymentDetails: sanitizePaymentDetails(payload),
     paymentStatus: "pending",
     orderStatus: payload.paymentMethod === "cod" ? "confirmed" : "pending",
     subtotal,

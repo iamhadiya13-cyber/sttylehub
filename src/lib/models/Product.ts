@@ -123,8 +123,8 @@ const ProductSchema = new Schema(
     campaignKey: { type: String, default: "", trim: true, index: true },
     archivedAt: { type: Date, default: null },
     acceptedPayments: {
-      razorpay: { type: Boolean, default: true },
-      stripe: { type: Boolean, default: true },
+      upi: { type: Boolean, default: true },
+      creditCard: { type: Boolean, default: true },
       cod: { type: Boolean, default: true },
     },
     returnAllowed: { type: Boolean, default: false },

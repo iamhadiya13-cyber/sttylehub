@@ -278,7 +278,7 @@ async function main() {
         {
           items: [{ productId: "prod-1", qty: 2, size: "M", color: "Black" }],
           shippingAddressId: "addr-1",
-          paymentMethod: "stripe",
+          paymentMethod: "credit_card",
         },
         {
           shippingResolver: async () => ({ fee: 49, label: "Rs.49", reason: "Standard shipping" }),
@@ -441,7 +441,7 @@ async function main() {
 
       const result = await validateOrderItemsForUser("user-1", "buyer@example.com", {
         items: [{ productId: "prod-1", qty: 1, size: "XL", color: "Black" }],
-        paymentMethod: "stripe",
+        paymentMethod: "credit_card",
       });
 
       assert.equal(result.invalidItems.length, 1);
@@ -552,7 +552,7 @@ async function main() {
             clientDiscountPrice: 2999,
           },
         ],
-        paymentMethod: "stripe",
+        paymentMethod: "credit_card",
       });
 
       assert.equal(result.invalidItems.length, 0);
@@ -632,7 +632,7 @@ async function main() {
           createOrderForUser("user-1", "buyer@example.com", {
             items: [{ productId: "prod-1", qty: 4, size: "M", color: "Black" }],
             shippingAddressId: "addr-1",
-            paymentMethod: "stripe",
+            paymentMethod: "credit_card",
           }),
         (error: any) =>
           error?.code === "INVALID_ORDER_ITEMS" &&
@@ -645,7 +645,7 @@ async function main() {
         {
           items: [{ productId: "prod-1", qty: 2, size: "M", color: "Black" }],
           shippingAddressId: "addr-1",
-          paymentMethod: "stripe",
+          paymentMethod: "credit_card",
         },
         {
           shippingResolver: async () => ({ fee: 49, label: "Rs.49", reason: "Standard shipping" }),
@@ -857,7 +857,7 @@ async function main() {
             { productId: "prod-1", variantId: "var-white-m", qty: 1, size: "M", color: "White" },
           ],
           shippingAddressId: "addr-1",
-          paymentMethod: "stripe",
+          paymentMethod: "credit_card",
         },
         {
           shippingResolver: async () => ({ fee: 49, label: "Rs.49", reason: "Standard shipping" }),
@@ -913,7 +913,7 @@ async function main() {
           { productId: "prod-1", qty: 2, size: "M", color: "Black" },
           { productId: "prod-1", qty: 2, size: "M", color: "Black" },
         ],
-        paymentMethod: "stripe",
+        paymentMethod: "credit_card",
       });
 
       assert.equal(result.validItems.length, 1);

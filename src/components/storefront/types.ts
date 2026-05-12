@@ -29,8 +29,8 @@ export type Product = {
   colorImages?: Record<string, string[]>;
   gender?: "men" | "women" | "unisex";
   acceptedPayments?: {
-    razorpay: boolean;
-    stripe: boolean;
+    upi: boolean;
+    creditCard: boolean;
     cod: boolean;
   };
   returnAllowed?: boolean;
@@ -139,6 +139,18 @@ export type Order = {
   orderStatus: string;
   paymentStatus: string;
   paymentMethod: string;
+  paymentDetails?: {
+    upi?: {
+      upiId: string;
+    };
+    creditCard?: {
+      cardholderName: string;
+      cardLast4: string;
+      cardNumberMasked: string;
+      expiryMonth: string;
+      expiryYear: string;
+    };
+  } | null;
   subtotal: number;
   discount: number;
   shippingCharge: number;

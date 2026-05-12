@@ -45,6 +45,32 @@ const OrderStatusHistorySchema = new Schema(
   { _id: false },
 );
 
+const UpiPaymentDetailsSchema = new Schema(
+  {
+    upiId: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
+const CreditCardPaymentDetailsSchema = new Schema(
+  {
+    cardholderName: { type: String, required: true, trim: true },
+    cardLast4: { type: String, required: true, trim: true },
+    cardNumberMasked: { type: String, required: true, trim: true },
+    expiryMonth: { type: String, required: true, trim: true },
+    expiryYear: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
+const PaymentDetailsSchema = new Schema(
+  {
+    upi: { type: UpiPaymentDetailsSchema, default: undefined },
+    creditCard: { type: CreditCardPaymentDetailsSchema, default: undefined },
+  },
+  { _id: false },
+);
+
 const OrderSchema = new Schema(
   {
     orderNumber: { type: String, required: true, unique: true, index: true },
@@ -52,7 +78,8 @@ const OrderSchema = new Schema(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     items: { type: [OrderItemSchema], required: true, default: [] },
     shippingAddress: { type: ShippingAddressSchema, required: true },
-    paymentMethod: { type: String, enum: ["razorpay", "stripe", "cod"], required: true },
+    paymentMethod: { type: String, enum: ["upi", "credit_card", "cod"], required: true },
+    paymentDetails: { type: PaymentDetailsSchema, default: null },
     paymentStatus: { type: String, enum: ["pending", "paid", "failed", "refunded"], default: "pending", index: true },
     orderStatus: {
       type: String,

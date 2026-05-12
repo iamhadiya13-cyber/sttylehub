@@ -22,11 +22,20 @@ import { formatCurrency } from "@/lib/utils";
 import { useCartStore } from "@/stores/cart-store";
 import { useLoadingStore } from "@/stores/loading-store";
 
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
-}
+type CheckoutPaymentMethod = "upi" | "credit_card" | "cod";
+
+type CheckoutPaymentDetails = {
+  upi: {
+    upiId: string;
+  };
+  creditCard: {
+    cardholderName: string;
+    cardNumber: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+  };
+};
 
 type InvalidCheckoutItem = {
   productId: string;
@@ -63,8 +72,8 @@ type CheckoutValidation = {
     price: number;
     discountPrice: number;
     acceptedPayments?: {
-      razorpay: boolean;
-      stripe: boolean;
+      upi: boolean;
+      creditCard: boolean;
       cod: boolean;
     };
   }>;
@@ -103,6 +112,70 @@ function invalidReasonLabel(item: InvalidCheckoutItem) {
   }
 }
 
+function getPaymentDetailsError(
+  paymentMethod: CheckoutPaymentMethod,
+  paymentDetails: CheckoutPaymentDetails,
+) {
+  if (paymentMethod === "upi") {
+    return paymentDetails.upi.upiId.trim() ? "" : "UPI ID is required";
+  }
+
+  if (paymentMethod === "credit_card") {
+    const { cardholderName, cardNumber, expiryMonth, expiryYear, cvv } = paymentDetails.creditCard;
+    if (!cardholderName.trim()) return "Cardholder name is required";
+    if (cardNumber.replace(/\s+/g, "").length < 12) return "Enter a valid card number";
+    if (!/^(0[1-9]|1[0-2])$/.test(expiryMonth.trim())) return "Expiry month must be in MM format";
+    if (!/^\d{2,4}$/.test(expiryYear.trim())) return "Expiry year must be in YY or YYYY format";
+    if (!/^\d{3,4}$/.test(cvv.trim())) return "Enter a valid CVV";
+  }
+
+  return "";
+}
+
+function buildPaymentDetailsPayload(
+  paymentMethod: CheckoutPaymentMethod,
+  paymentDetails: CheckoutPaymentDetails,
+) {
+  if (paymentMethod === "upi") {
+    return {
+      upi: {
+        upiId: paymentDetails.upi.upiId.trim(),
+      },
+    };
+  }
+
+  if (paymentMethod === "credit_card") {
+    return {
+      creditCard: {
+        cardholderName: paymentDetails.creditCard.cardholderName.trim(),
+        cardNumber: paymentDetails.creditCard.cardNumber.replace(/\s+/g, ""),
+        expiryMonth: paymentDetails.creditCard.expiryMonth.trim(),
+        expiryYear: paymentDetails.creditCard.expiryYear.trim(),
+        cvv: paymentDetails.creditCard.cvv.trim(),
+      },
+    };
+  }
+
+  return undefined;
+}
+
+function formatCheckoutPaymentMethod(paymentMethod: CheckoutPaymentMethod) {
+  switch (paymentMethod) {
+    case "upi":
+      return "UPI";
+    case "credit_card":
+      return "Credit Card";
+    case "cod":
+      return "Cash on Delivery";
+    default:
+      return paymentMethod;
+  }
+}
+
+function getPaymentAvailabilityKey(paymentMethod: CheckoutPaymentMethod) {
+  return paymentMethod === "credit_card" ? "creditCard" : paymentMethod;
+}
+
 export function CheckoutPageScreen() {
   const router = useRouter();
   const setLoading = useLoadingStore((state) => state.setLoading);
@@ -119,7 +192,19 @@ export function CheckoutPageScreen() {
   const setCoupon = useCartStore((state) => state.setCoupon);
   const [step, setStep] = useState(1);
   const [selectedAddressId, setSelectedAddressId] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "stripe" | "cod">("razorpay");
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("upi");
+  const [paymentDetails, setPaymentDetails] = useState<CheckoutPaymentDetails>({
+    upi: {
+      upiId: "",
+    },
+    creditCard: {
+      cardholderName: "",
+      cardNumber: "",
+      expiryMonth: "",
+      expiryYear: "",
+      cvv: "",
+    },
+  });
   const [placing, setPlacing] = useState(false);
   const [validation, setValidation] = useState<CheckoutValidation | null>(null);
   const idempotencyKeyRef = useRef(
@@ -174,13 +259,17 @@ export function CheckoutPageScreen() {
     () =>
       items.reduce(
         (acc, item) => ({
-          razorpay: acc.razorpay && (item.acceptedPayments?.razorpay ?? true),
-          stripe: acc.stripe && (item.acceptedPayments?.stripe ?? true),
+          upi: acc.upi && (item.acceptedPayments?.upi ?? true),
+          creditCard: acc.creditCard && (item.acceptedPayments?.creditCard ?? true),
           cod: acc.cod && (item.acceptedPayments?.cod ?? true) && total <= 5000,
         }),
-        { razorpay: true, stripe: true, cod: true },
+        { upi: true, creditCard: true, cod: true },
       ),
     [items, total],
+  );
+  const paymentDetailsError = useMemo(
+    () => getPaymentDetailsError(paymentMethod, paymentDetails),
+    [paymentDetails, paymentMethod],
   );
 
   const runCheckoutValidation = useCallback(
@@ -215,6 +304,7 @@ export function CheckoutPageScreen() {
             })),
             shippingAddressId: selectedAddressId || undefined,
             paymentMethod,
+            paymentDetails: buildPaymentDetailsPayload(paymentMethod, paymentDetails),
             couponCode: coupon?.code,
             couponId: coupon?.couponId,
           }),
@@ -284,7 +374,7 @@ export function CheckoutPageScreen() {
         setValidationLoading(false);
       }
     },
-    [coupon, items, paymentMethod, selectedAddressId, setCoupon, status, updateItemData],
+    [coupon, items, paymentDetails, paymentMethod, selectedAddressId, setCoupon, status, updateItemData],
   );
 
   useEffect(() => {
@@ -303,12 +393,12 @@ export function CheckoutPageScreen() {
   }, [profile?.addresses, selectedAddressId]);
 
   useEffect(() => {
-    const available = (["razorpay", "stripe", "cod"] as const).filter(
-      (method) => availablePayments[method],
+    const available = (["upi", "credit_card", "cod"] as const).filter(
+      (method) => availablePayments[getPaymentAvailabilityKey(method)],
     );
     if (available.length === 1) {
       setPaymentMethod(available[0]);
-    } else if (!availablePayments[paymentMethod] && available[0]) {
+    } else if (!availablePayments[getPaymentAvailabilityKey(paymentMethod)] && available[0]) {
       setPaymentMethod(available[0]);
     }
   }, [availablePayments, paymentMethod]);
@@ -364,6 +454,10 @@ export function CheckoutPageScreen() {
       toast.error("Verify your email to continue with checkout");
       return;
     }
+    if (paymentDetailsError) {
+      toast.error(paymentDetailsError);
+      return;
+    }
 
     const latestValidation = await runCheckoutValidation({ silent: false });
     if (!latestValidation || !latestValidation.canPlaceOrder) {
@@ -389,6 +483,7 @@ export function CheckoutPageScreen() {
           })),
           shippingAddressId: selectedAddressId,
           paymentMethod,
+          paymentDetails: buildPaymentDetailsPayload(paymentMethod, paymentDetails),
           couponCode: coupon?.code,
           couponId: coupon?.couponId,
         }),
@@ -427,57 +522,12 @@ export function CheckoutPageScreen() {
         return;
       }
 
-      if (paymentMethod === "stripe") {
-        toast.success(
-          "Stripe order created. Complete payment in your configured Stripe flow.",
-        );
+      if (paymentMethod === "upi" || paymentMethod === "credit_card") {
         clearCart();
+        toast.success("Order placed. Payment is pending manual review.");
         router.push(`/orders/${orderId}?success=true`);
         return;
       }
-
-      const razorpayResponse = await fetch("/api/payment/razorpay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
-      });
-      const razorpayJson = (await razorpayResponse.json()) as {
-        success: boolean;
-        data?: Record<string, string>;
-        message?: string;
-      };
-      if (!razorpayResponse.ok || !razorpayJson.success || !window.Razorpay) {
-        throw new Error(razorpayJson.message || "Razorpay unavailable");
-      }
-      const rzp = new window.Razorpay({
-        key: razorpayJson.data?.keyId,
-        order_id: razorpayJson.data?.rzpOrderId,
-        handler: async (response: Record<string, string>) => {
-          const verifyResponse = await fetch("/api/payment/razorpay/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...response, orderId }),
-          });
-          const verifyJson = (await verifyResponse.json().catch(() => null)) as {
-            success?: boolean;
-            message?: string;
-            error?: string;
-          } | null;
-
-          if (!verifyResponse.ok || !verifyJson?.success) {
-            toast.error(
-              verifyJson?.message ||
-                verifyJson?.error ||
-                "Payment verification failed. Please contact support with your order ID.",
-            );
-            return;
-          }
-
-          clearCart();
-          router.push(`/orders/${orderId}?success=true`);
-        },
-      });
-      rzp.open();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to place order");
     } finally {
@@ -659,8 +709,8 @@ export function CheckoutPageScreen() {
 
             {step === 2 ? (
               <div className="space-y-4 rounded-3xl border border-[#1F1F1F] bg-[#111111] p-5">
-                {(["razorpay", "stripe", "cod"] as const).map((method) => {
-                  const enabled = availablePayments[method];
+                {(["upi", "credit_card", "cod"] as const).map((method) => {
+                  const enabled = availablePayments[getPaymentAvailabilityKey(method)];
                   return (
                     <label
                       key={method}
@@ -682,22 +732,19 @@ export function CheckoutPageScreen() {
                       />
                       <div>
                         <p className="font-medium">
-                          {method === "razorpay"
-                            ? "Razorpay"
-                            : method === "stripe"
-                              ? "Stripe"
+                          {method === "upi"
+                            ? "UPI"
+                            : method === "credit_card"
+                              ? "Credit Card"
                               : "Cash on Delivery"}
                         </p>
                         <p className="text-sm text-[#888888]">
-                          {method === "razorpay"
-                            ? "UPI, Cards, Netbanking, Wallets"
-                            : method === "stripe"
-                              ? "International Credit/Debit Cards"
+                          {method === "upi"
+                            ? "Pay using your UPI ID"
+                            : method === "credit_card"
+                              ? "Enter card details for manual verification"
                               : "Pay when you receive"}
                         </p>
-                        {method === "razorpay" ? (
-                          <p className="mt-2 text-xs text-[#A5B4FC]">India-ready</p>
-                        ) : null}
                         {method === "cod" && total > 5000 ? (
                           <p className="mt-2 text-xs text-amber-300">
                             COD available up to Rs 5000
@@ -712,12 +759,132 @@ export function CheckoutPageScreen() {
                     </label>
                   );
                 })}
+                {paymentMethod === "upi" ? (
+                  <div className="rounded-2xl border border-[#1F1F1F] bg-black/20 p-4">
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-medium text-white">UPI ID</span>
+                      <input
+                        type="text"
+                        value={paymentDetails.upi.upiId}
+                        onChange={(event) =>
+                          setPaymentDetails((current) => ({
+                            ...current,
+                            upi: { upiId: event.target.value },
+                          }))
+                        }
+                        placeholder="yourname@bank"
+                        className="h-11 w-full rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] px-4 text-sm text-white outline-none"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                {paymentMethod === "credit_card" ? (
+                  <div className="grid gap-4 rounded-2xl border border-[#1F1F1F] bg-black/20 p-4 md:grid-cols-2">
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-sm font-medium text-white">Cardholder Name</span>
+                      <input
+                        type="text"
+                        value={paymentDetails.creditCard.cardholderName}
+                        onChange={(event) =>
+                          setPaymentDetails((current) => ({
+                            ...current,
+                            creditCard: {
+                              ...current.creditCard,
+                              cardholderName: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Name on card"
+                        className="h-11 w-full rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] px-4 text-sm text-white outline-none"
+                      />
+                    </label>
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-sm font-medium text-white">Card Number</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={paymentDetails.creditCard.cardNumber}
+                        onChange={(event) =>
+                          setPaymentDetails((current) => ({
+                            ...current,
+                            creditCard: {
+                              ...current.creditCard,
+                              cardNumber: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="1234 5678 9012 3456"
+                        className="h-11 w-full rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] px-4 text-sm text-white outline-none"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-medium text-white">Expiry Month</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={paymentDetails.creditCard.expiryMonth}
+                        onChange={(event) =>
+                          setPaymentDetails((current) => ({
+                            ...current,
+                            creditCard: {
+                              ...current.creditCard,
+                              expiryMonth: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="MM"
+                        className="h-11 w-full rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] px-4 text-sm text-white outline-none"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-medium text-white">Expiry Year</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={paymentDetails.creditCard.expiryYear}
+                        onChange={(event) =>
+                          setPaymentDetails((current) => ({
+                            ...current,
+                            creditCard: {
+                              ...current.creditCard,
+                              expiryYear: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="YY"
+                        className="h-11 w-full rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] px-4 text-sm text-white outline-none"
+                      />
+                    </label>
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-sm font-medium text-white">CVV</span>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        value={paymentDetails.creditCard.cvv}
+                        onChange={(event) =>
+                          setPaymentDetails((current) => ({
+                            ...current,
+                            creditCard: {
+                              ...current.creditCard,
+                              cvv: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="123"
+                        className="h-11 w-full rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] px-4 text-sm text-white outline-none"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                {paymentDetailsError ? (
+                  <p className="text-sm text-[#F5C2C2]">{paymentDetailsError}</p>
+                ) : null}
                 {Object.values(availablePayments).filter(Boolean).length === 1 ? (
                   <p className="text-sm text-[#A5B4FC]">
-                    {paymentMethod.toUpperCase()} is the only available option for this order.
+                    {formatCheckoutPaymentMethod(paymentMethod)} is the only available option for this order.
                   </p>
                 ) : null}
-                <Button type="button" onClick={() => setStep(3)} disabled={verificationRequired}>
+                <Button type="button" onClick={() => setStep(3)} disabled={verificationRequired || Boolean(paymentDetailsError)}>
                   Continue to Review
                 </Button>
               </div>
@@ -820,15 +987,19 @@ export function CheckoutPageScreen() {
                   type="button"
                   loading={placing}
                   loadingText={
-                    paymentMethod === "stripe"
-                      ? "Opening payment..."
-                      : paymentMethod === "razorpay"
-                        ? "Opening payment..."
-                        : "Placing order..."
+                    paymentMethod === "cod"
+                      ? "Placing order..."
+                      : "Saving payment details..."
                   }
                   onClick={() => void placeOrder()}
                   className="w-full"
-                  disabled={placing || validationLoading || invalidItems.length > 0 || verificationRequired}
+                  disabled={
+                    placing ||
+                    validationLoading ||
+                    invalidItems.length > 0 ||
+                    verificationRequired ||
+                    Boolean(paymentDetailsError)
+                  }
                 >
                   {invalidItems.length
                     ? "Resolve Cart Issues To Continue"

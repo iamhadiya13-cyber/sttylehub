@@ -104,10 +104,21 @@ function StatCard({ label, value, prefix, icon: Icon }: { label: string; value: 
   );
 }
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+function ChartCard({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur sm:p-6 lg:p-7">
-      <h2 className="mb-5 text-xl font-bold text-white sm:mb-6 sm:text-2xl">{title}</h2>
+      <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between">
+        <h2 className="text-xl font-bold text-white sm:text-2xl">{title}</h2>
+        {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
+      </div>
       <div className="h-[260px] sm:h-[300px] lg:h-80">{children}</div>
     </div>
   );
@@ -135,14 +146,47 @@ function chartTooltip() {
   return { background: "#111111", border: "1px solid #1F1F1F", borderRadius: 16, color: "#ffffff" };
 }
 
+function buildMonthOptions(count = 12) {
+  const formatter = new Intl.DateTimeFormat("en-IN", { month: "short", year: "numeric" });
+  const cursor = new Date();
+  cursor.setDate(1);
+  const options: Array<{ value: string; label: string }> = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const current = new Date(cursor.getFullYear(), cursor.getMonth() - index, 1);
+    const value = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`;
+    options.push({ value, label: formatter.format(current) });
+  }
+
+  return options;
+}
+
 export function AdminDashboardScreen() {
-  const { data, loading, error } = useApi<DashboardStats>("/api/admin/dashboard", {});
+  const monthOptions = useMemo(() => buildMonthOptions(), []);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const dashboardUrl = useMemo(() => {
+    if (!selectedMonths.length) {
+      return "/api/admin/dashboard";
+    }
+    const query = selectedMonths
+      .slice()
+      .sort()
+      .map((month) => `months=${encodeURIComponent(month)}`)
+      .join("&");
+    return `/api/admin/dashboard?${query}`;
+  }, [selectedMonths]);
+  const { data, loading, error } = useApi<DashboardStats>(dashboardUrl, {});
   const chartData = ((data.revenueChart as Array<Record<string, unknown>>) || []).map((item) => ({
     date: item.date ? new Date(String(item.date)).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "",
     revenue: Number(item.revenue || 0),
     orders: Number(item.orders || 0),
   }));
   const hasChartData = chartData.some((item) => item.revenue > 0 || item.orders > 0);
+  const toggleMonth = (month: string) => {
+    setSelectedMonths((current) =>
+      current.includes(month) ? current.filter((value) => value !== month) : [...current, month],
+    );
+  };
 
   return (
     <AdminShell title="Dashboard">
@@ -178,7 +222,36 @@ export function AdminDashboardScreen() {
           <MiniMetricCard label="Out of Stock" value={String(Number(data.outOfStockCount || 0))} accent="#EF4444" />
         </div>
         <div className="grid gap-7 xl:grid-cols-[1.15fr,0.85fr]">
-          <ChartCard title="Revenue Trend">
+          <ChartCard
+            title="Revenue Trend"
+            action={
+              <>
+                {monthOptions.map((month) => (
+                  <button
+                    key={month.value}
+                    type="button"
+                    onClick={() => toggleMonth(month.value)}
+                    className={
+                      selectedMonths.includes(month.value)
+                        ? "rounded-full bg-[#4F46E5]/14 px-3 py-1.5 text-xs font-semibold text-[#C7D2FE]"
+                        : "rounded-full border border-[#1F1F1F] px-3 py-1.5 text-xs font-semibold text-[#888888]"
+                    }
+                  >
+                    {month.label}
+                  </button>
+                ))}
+                {selectedMonths.length ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMonths([])}
+                    className="rounded-full border border-[#1F1F1F] px-3 py-1.5 text-xs font-semibold text-[#F5C2C2]"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </>
+            }
+          >
             {hasChartData ? <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>

@@ -19,8 +19,8 @@ export type CartItem = {
   maxQty: number;
   gender?: "men" | "women" | "unisex";
   acceptedPayments?: {
-    razorpay: boolean;
-    stripe: boolean;
+    upi: boolean;
+    creditCard: boolean;
     cod: boolean;
   };
 };

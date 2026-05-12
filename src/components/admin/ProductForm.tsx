@@ -30,7 +30,7 @@ type ProductFormState = {
   sizes: string[];
   colors: { name: string; hex: string }[];
   variants: ProductVariant[];
-  acceptedPayments: { razorpay: boolean; stripe: boolean; cod: boolean };
+  acceptedPayments: { upi: boolean; creditCard: boolean; cod: boolean };
   returnAllowed: boolean;
   returnWindowDays: string;
   exchangeAllowed: boolean;
@@ -87,7 +87,7 @@ function makeInitialForm(product?: Product | null): ProductFormState {
     sizes,
     colors,
     variants,
-    acceptedPayments: product?.acceptedPayments || { razorpay: true, stripe: true, cod: true },
+    acceptedPayments: product?.acceptedPayments || { upi: true, creditCard: true, cod: true },
     returnAllowed: product?.returnAllowed ?? false,
     returnWindowDays: String(product?.returnWindowDays ?? 7),
     exchangeAllowed: product?.exchangeAllowed ?? false,
@@ -373,8 +373,8 @@ export default function ProductForm({ productId }: { productId?: string }) {
         isPublished: form.isPublished ?? true,
         isFeatured: form.isFeatured ?? false,
         acceptedPayments: form.acceptedPayments || {
-          razorpay: true,
-          stripe: true,
+          upi: true,
+          creditCard: true,
           cod: true,
         },
         returnAllowed: form.returnAllowed,
@@ -643,8 +643,8 @@ export default function ProductForm({ productId }: { productId?: string }) {
             <section className="space-y-4 rounded-[24px] border border-white/8 bg-[#101010] p-4 sm:p-5">
               <h3 className="app-section-heading">Settings</h3>
               {[
-                { key: "razorpay", label: "Razorpay" },
-                { key: "stripe", label: "Stripe" },
+                { key: "upi", label: "UPI" },
+                { key: "creditCard", label: "Credit Card" },
                 { key: "cod", label: "Cash on Delivery" },
               ].map((method) => (
                 <label key={method.key} className="flex items-center justify-between rounded-xl border border-[#1F1F1F] px-4 py-3 text-sm text-white">

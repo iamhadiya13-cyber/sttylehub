@@ -85,11 +85,11 @@ export const productInputSchema = z.object({
     .min(1),
   acceptedPayments: z
     .object({
-      razorpay: z.boolean().default(true),
-      stripe: z.boolean().default(true),
+      upi: z.boolean().default(true),
+      creditCard: z.boolean().default(true),
       cod: z.boolean().default(true),
     })
-    .default({ razorpay: true, stripe: true, cod: true }),
+    .default({ upi: true, creditCard: true, cod: true }),
   returnAllowed: z.boolean().default(false),
   returnWindowDays: z.number().int().min(1).max(30).default(7),
   exchangeAllowed: z.boolean().default(false),
@@ -98,6 +98,27 @@ export const productInputSchema = z.object({
   isFeatured: z.boolean().default(false),
   tags: z.array(z.string()).default([]),
 });
+
+const paymentMethodSchema = z.enum(["upi", "credit_card", "cod"]);
+
+const upiPaymentDetailsSchema = z.object({
+  upiId: z.string().trim().min(1, "UPI ID is required"),
+});
+
+const creditCardPaymentDetailsSchema = z.object({
+  cardholderName: z.string().trim().min(1, "Cardholder name is required"),
+  cardNumber: z.string().trim().min(12).max(19),
+  expiryMonth: z.string().trim().regex(/^(0[1-9]|1[0-2])$/, "Use MM format"),
+  expiryYear: z.string().trim().regex(/^\d{2,4}$/, "Use YY or YYYY format"),
+  cvv: z.string().trim().regex(/^\d{3,4}$/, "Enter a valid CVV"),
+});
+
+const paymentDetailsSchema = z
+  .object({
+    upi: upiPaymentDetailsSchema.optional(),
+    creditCard: creditCardPaymentDetailsSchema.optional(),
+  })
+  .optional();
 
 export const cartSyncSchema = z.object({
   items: z.array(
@@ -111,7 +132,7 @@ export const cartSyncSchema = z.object({
   ),
 });
 
-export const orderCreateSchema = z.object({
+const orderBaseSchema = z.object({
   idempotencyKey: z.string().min(1),
   items: z.array(
     z.object({
@@ -125,14 +146,63 @@ export const orderCreateSchema = z.object({
     }),
   ),
   shippingAddressId: z.string().min(1),
-  paymentMethod: z.enum(["razorpay", "stripe", "cod"]),
+  paymentMethod: paymentMethodSchema,
+  paymentDetails: paymentDetailsSchema,
   couponCode: z.string().optional(),
   couponId: z.string().optional(),
 });
 
-export const orderValidationSchema = orderCreateSchema.extend({
-  shippingAddressId: z.string().min(1).optional(),
-});
+function validatePaymentDetails(value: z.infer<typeof orderBaseSchema>, ctx: z.RefinementCtx) {
+    if (value.paymentMethod === "upi" && !value.paymentDetails?.upi?.upiId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["paymentDetails", "upi", "upiId"],
+        message: "UPI ID is required",
+      });
+    }
+
+    if (value.paymentMethod === "credit_card" && !value.paymentDetails?.creditCard) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["paymentDetails", "creditCard"],
+        message: "Credit card details are required",
+      });
+    }
+
+    if (value.paymentMethod === "cod" && value.paymentDetails) {
+      const hasUpi = Boolean(value.paymentDetails.upi?.upiId);
+      const hasCard =
+        Boolean(value.paymentDetails.creditCard?.cardholderName) ||
+        Boolean(value.paymentDetails.creditCard?.cardNumber) ||
+        Boolean(value.paymentDetails.creditCard?.expiryMonth) ||
+        Boolean(value.paymentDetails.creditCard?.expiryYear) ||
+        Boolean(value.paymentDetails.creditCard?.cvv);
+
+      if (hasUpi || hasCard) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["paymentDetails"],
+          message: "Cash on Delivery does not accept payment details",
+        });
+      }
+    }
+}
+
+export const orderCreateSchema = orderBaseSchema.superRefine(validatePaymentDetails);
+
+export const orderValidationSchema = orderBaseSchema
+  .extend({
+    shippingAddressId: z.string().min(1).optional(),
+  })
+  .superRefine((value, ctx) =>
+    validatePaymentDetails(
+      {
+        ...value,
+        shippingAddressId: value.shippingAddressId || "",
+      },
+      ctx,
+    ),
+  );
 
 export const cancelOrderSchema = z.object({
   reason: z.string().min(1).max(500),
